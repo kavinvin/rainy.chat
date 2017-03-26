@@ -93,7 +93,7 @@ void checkError(int *sockfd, char *errormsg, char *successmsg) {
         perror(errormsg);
         exit(1);
     }
-    // printf("%s\n", successmsg);
+    printf("%s\n", successmsg);
 
 }
 
