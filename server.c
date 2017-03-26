@@ -1,5 +1,5 @@
-#include "chat.h"
-#include "helper.h"
+#include "headers/chat.h"
+#include "headers/helper.h"
 
 void checkError(int *sockfd, char *errormsg, char *successmsg);
 int initSocket(char *host, char *port);
