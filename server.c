@@ -55,19 +55,15 @@ void initConnection(int *sockfd) {
     *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
     checkError(newsockfd, "ERROR on accepting", "Accepted");
 
+    // initRecvSession(&newsockfd);
     state = pthread_create(&tid, NULL, initRecvSession, (void *)newsockfd);
     if (state){
         printf("ERROR; return code from pthread_create() is %d\n", state);
         exit(-1);
     }
-    // initRecvSession(&newsockfd);
-
-    // send message to the client
-    state = send(*newsockfd, "Message received", 16, 0);
-    checkError(&state, "ERROR writing to socket", "Message sent");
 
     // close socket
-    close(*sockfd);
+    // close(*sockfd);
 }
 
 void *initRecvSession(void *param) {
@@ -79,8 +75,15 @@ void *initRecvSession(void *param) {
         memset(&buffer, 0, sizeof(buffer));
         state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
         checkError(&state, "ERROR reading from socket", "Message received");
-        printf("Here is the message: %s\n", buffer);
         searchCommand(buffer);
+        printf("Here is the message: %s\n", buffer);
+
+        // send message to the client
+        state = send(*newsockfd, "Message received", 16, 0);
+        if (state < 0) {
+            printf("Connection lost\n");
+            exit(1);
+        }
     }
     pthread_exit(NULL);
 }
@@ -90,7 +93,7 @@ void checkError(int *sockfd, char *errormsg, char *successmsg) {
         perror(errormsg);
         exit(1);
     }
-    printf("%s\n", successmsg);
+    // printf("%s\n", successmsg);
 
 }
 

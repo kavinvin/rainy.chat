@@ -37,21 +37,21 @@ char * getLine() {
     return string;
 }
 
-char * strip(char *string) {
-    // strip whitespace from two sides of string
-    int length = strlen(string);
-    // slice of from the right
-    for (int i=length-1; i>=0; i--) {
-        if ( !isspace(string[i]) && isascii(string[i]) ) break;
-        string[i] = '\0';
-    }
-    // increment pointer until find non-whitespace character
-    while (*string) {
-        if ( !isspace(*string) && isascii(*string) ) break;
-        string++;
-    }
-    return string;
-}
+// char * strip(char *string) {
+//     // strip whitespace from two sides of string
+//     int length = strlen(string);
+//     // slice of from the right
+//     for (int i=length-1; i>=0; i--) {
+//         if ( !isspace(string[i]) && isascii(string[i]) ) break;
+//         string[i] = '\0';
+//     }
+//     // increment pointer until find non-whitespace character
+//     while (*string) {
+//         if ( !isspace(*string) && isascii(*string) ) break;
+//         string++;
+//     }
+//     return string;
+// }
 
 char ** split(char *string, char delimiter) {
     // split string with given delimiter, return pointers of string
