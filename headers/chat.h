@@ -17,8 +17,10 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <netdb.h>
+#include <pthread.h>
 
 #define BUFFER_SIZE 256
+#define NUM_THREADS 8
 
 typedef struct {
     char name[64];

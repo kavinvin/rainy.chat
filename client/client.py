@@ -2,10 +2,14 @@ import socket
 import sys
 
 
-def connect(host, port, message):
+def connect(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((host, port))
-    s.sendall(message.encode())
+    while True:
+        message = getMessage()
+        s.sendall(message.encode())
+        if message == "/exit":
+            break
     data = s.recv(256)
     s.close()
     return data
@@ -31,13 +35,10 @@ def getPort():
 
 
 def getMessage():
-    try:
-        message = sys.argv[3]
-    except IndexError:
-        print('enter message:', end=' ')
-        message = input()
+    print('enter message:', end=' ')
+    message = input()
     return message
 
 
-data = connect(getHost(), getPort(), getMessage())
+data = connect(getHost(), getPort())
 print(data)
