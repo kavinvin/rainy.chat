@@ -53,7 +53,7 @@ void initConnection(int *sockfd) {
     printf("Here is the message: %s\n", buffer);
 
     // send message to the client
-    state = send(newsockfd, "Message received", BUFFER_SIZE, 0);
+    state = send(newsockfd, "Message received", 16, 0);
     checkError(&state, "ERROR writing to socket", "Message sent");
 
     // close socket
