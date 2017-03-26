@@ -6,7 +6,7 @@ def connect(host, port, message):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((host, port))
     s.sendall(message.encode())
-    data = s.recv(1024)
+    data = s.recv(256)
     s.close()
     return data
 
@@ -14,7 +14,7 @@ def connect(host, port, message):
 def getHost():
     # 52.74.90.15
     try:
-        host = int(sys.argv[1])
+        host = sys.argv[1]
     except IndexError:
         print('enter host:', end=' ')
         host = input()
@@ -32,7 +32,7 @@ def getPort():
 
 def getMessage():
     try:
-        message = int(sys.argv[3])
+        message = sys.argv[3]
     except IndexError:
         print('enter message:', end=' ')
         message = input()
