@@ -56,7 +56,7 @@
       <file leaf-file-name="main.c" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-3">
+            <state relative-caret-position="-25">
               <caret line="53" column="0" lean-forward="true" selection-start-line="53" selection-start-column="0" selection-end-line="53" selection-end-column="0" />
               <folding>
                 <element signature="e#0#17#0" expanded="true" />
@@ -337,12 +337,12 @@
       <option name="presentableId" value="Default" />
       <updated>1490498088441</updated>
       <workItem from="1490498089803" duration="2796000" />
-      <workItem from="1490502452599" duration="7548000" />
+      <workItem from="1490502452599" duration="7602000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="10344000" />
+    <option name="totallyTimeSpent" value="10398000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -440,7 +440,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-3">
+        <state relative-caret-position="-25">
           <caret line="53" column="0" lean-forward="true" selection-start-line="53" selection-start-column="0" selection-end-line="53" selection-end-column="0" />
           <folding>
             <element signature="e#0#17#0" expanded="true" />
