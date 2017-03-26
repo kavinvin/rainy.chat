@@ -1,0 +1,23 @@
+
+function getRoom($roomID) {
+    if ($database->hasRoom($roomId)) {
+        $room = $user->selectRoom($roomID)
+    } else {
+        $room = $user->createRoom($roomID)
+        $room = $user->selectRoom($roomID)
+    }
+}
+
+function selectRoom($roomID)
+
+function createRoom($roomID, $roomName, $password=None) {
+    $database->roomID = $roomID
+    $database->roomName = $roomName
+    $database->password = $password
+    $database->save()
+    return $room
+}
+
+$user->connect()
+$user->getUsername($username)
+$user->getRoom($roomID)

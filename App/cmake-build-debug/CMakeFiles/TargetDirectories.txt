@@ -1,0 +1,3 @@
+/Users/kavinvin/Repository/RainChat/RainChat-Back/App/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/kavinvin/Repository/RainChat/RainChat-Back/App/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/kavinvin/Repository/RainChat/RainChat-Back/App/cmake-build-debug/CMakeFiles/App.dir
