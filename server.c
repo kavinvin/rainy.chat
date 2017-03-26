@@ -52,6 +52,7 @@ void initConnection(int *sockfd) {
 
     // accept incoming request, create new client socket
     clilen = sizeof(cli_addr);
+    newsockfd = malloc(sizeof(int));
     *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
     checkError(newsockfd, "ERROR on accepting", "Accepted");
 
