@@ -1,16 +1,25 @@
-#ifndef CHAT_H_
-#define CHAT_H_
+/**
+  @file  helper.h
+  @brief A header file which included common header functions
+*/
+
+#ifndef HELPER_H_
+#define HELPER_H_
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
+
+#define SIZE 64
 
 int ord(char letter);
 char chr(int number);
 char * getLine();
 char * strip(char *string);
 char ** split(char *string, char delimiter);
+void strLower(char *string);
 
 int ord(char letter) {
     return (int)letter - 48;
@@ -52,8 +61,7 @@ char ** split(char *string, char delimiter) {
     while (*string) {
         // found non-delimiter character
         if (breakpoint && *string != delimiter) {
-            parts
-                    parts[count] = string;
+            parts[count] = string;
             breakpoint = false;
             count++;
             continue;
@@ -66,6 +74,10 @@ char ** split(char *string, char delimiter) {
         string++;
     }
     return parts;
+}
+
+void strLower(char *string) {
+    for (; *string; ++string) *string = tolower(*string);
 }
 
 #endif

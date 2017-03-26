@@ -1,2 +1,2 @@
-# Terminal101
-Terminal tutorial on emulator
+# RainChat (Back-end)
+RainChat application

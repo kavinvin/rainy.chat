@@ -1,15 +1,22 @@
+/**
+  @file  server.c
+  @brief Instant messaging API
+*/
+
 #include "headers/chat.h"
 #include "headers/helper.h"
 
 void checkError(int *sockfd, char *errormsg, char *successmsg);
 int initSocket(char *host, char *portno);
 void initConnection(int *sockfd);
-void initRecvSession(void *param);
+void *initRecvSession(void *param);
+void searchCommand(char *command);
 
 int main(int argc, char *argv[]) {
     int sockfd;
     sockfd = initSocket(argv[1], argv[2]);
     initConnection(&sockfd);
+    pthread_exit(NULL);
 }
 
 int initSocket(char *host, char *portno) {
@@ -38,30 +45,32 @@ int initSocket(char *host, char *portno) {
 }
 
 void initConnection(int *sockfd) {
-    int newsockfd, state;
+    int *newsockfd, state;
     struct sockaddr_in cli_addr;
     socklen_t clilen;
-    pthread_t threads[NUM_THREADS];
+    pthread_t tid;
 
     // accept incoming request, create new client socket
     clilen = sizeof(cli_addr);
-    newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
-    checkError(&newsockfd, "ERROR on accepting", "Accepted");
+    *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
+    checkError(newsockfd, "ERROR on accepting", "Accepted");
 
-    // state = pthread_create(&threads[0], NULL, initRecvSession, (void *)t);
-    initRecvSession(&newsockfd);
+    state = pthread_create(&tid, NULL, initRecvSession, (void *)newsockfd);
+    if (state){
+        printf("ERROR; return code from pthread_create() is %d\n", state);
+        exit(-1);
+    }
+    // initRecvSession(&newsockfd);
 
     // send message to the client
-    state = send(newsockfd, "Message received", 16, 0);
+    state = send(*newsockfd, "Message received", 16, 0);
     checkError(&state, "ERROR writing to socket", "Message sent");
 
     // close socket
     close(*sockfd);
-
-    // pthread_exit(NULL);
 }
 
-void initRecvSession(void *param) {
+void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
     char buffer[BUFFER_SIZE];
     int state;
@@ -71,11 +80,9 @@ void initRecvSession(void *param) {
         state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
         checkError(&state, "ERROR reading from socket", "Message received");
         printf("Here is the message: %s\n", buffer);
-        if (strcmp(buffer, "/exit") == 0) {
-            break;
-        }
+        searchCommand(buffer);
     }
-    // pthread_exit(NULL);
+    pthread_exit(NULL);
 }
 
 void checkError(int *sockfd, char *errormsg, char *successmsg) {
@@ -85,4 +92,10 @@ void checkError(int *sockfd, char *errormsg, char *successmsg) {
     }
     printf("%s\n", successmsg);
 
+}
+
+void searchCommand(char *command) {
+    if (strcmp(command, "/exit") == 0) {
+        pthread_exit(NULL);
+    }
 }
