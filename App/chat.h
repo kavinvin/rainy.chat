@@ -18,4 +18,17 @@
 #include <string.h>
 #include <netdb.h>
 
+#define BUFFER_SIZE 256
+
+typedef struct {
+    char name[64];
+    int id;
+    int socket[2];
+} User;
+
+typedef struct {
+    char name[64];
+    int id;
+} Room;
+
 #endif
