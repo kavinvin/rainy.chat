@@ -10,6 +10,7 @@ void checkError(int *sockfd, char *errormsg, char *successmsg);
 int initSocket(char *host, char *portno);
 void initConnection(int *sockfd);
 void *initRecvSession(void *param);
+int processMessage(char *message);
 void searchCommand(char *command);
 
 int main(int argc, char *argv[]) {
@@ -73,18 +74,22 @@ void *initRecvSession(void *param) {
     int state;
     while (true) {
         // receive message from the client to buffer
+        // select(numfds, &read_fds, NULL, NULL, NULL);
         memset(&buffer, 0, sizeof(buffer));
         state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
-        checkError(&state, "ERROR reading from socket", "Message received");
+        if (state < 0) {
+            printf("Reading failed\n");
+            pthread_exit(NULL);
+        }
+        processMessage(buffer);
         searchCommand(buffer);
-        printf("Here is the message: %s\n", buffer);
 
         // send message to the client
-        state = send(*newsockfd, "Message received", 16, 0);
-        if (state < 0) {
-            printf("Connection lost\n");
-            exit(1);
-        }
+        // state = send(*newsockfd, "Message received", 16, 0);
+        // if (state < 0) {
+        //     printf("Connection lost\n");
+        //     exit(1);
+        // }
     }
     pthread_exit(NULL);
 }
@@ -98,8 +103,25 @@ void checkError(int *sockfd, char *errormsg, char *successmsg) {
 
 }
 
+int processMessage(char *message) {
+    if (*message != '=') {
+        pthread_exit(NULL);
+        printf("Connection lost\n");
+        return -1;
+    }
+    message++;
+    if (*message == '/') {
+        searchCommand(message);
+        return 1;
+    } else {
+        printf("Here is the message: %s\n", message);
+        return 0;
+    }
+}
+
 void searchCommand(char *command) {
     if (strcmp(command, "/exit") == 0) {
+        printf("exited\n");
         pthread_exit(NULL);
     }
 }

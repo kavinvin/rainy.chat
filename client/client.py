@@ -6,13 +6,12 @@ def connect(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((host, port))
     while True:
-        message = getMessage()
+        message = "=" + getMessage()
         s.sendall(message.encode())
-        if message == "/exit":
-            break
-    data = s.recv(256)
-    s.close()
-    return data
+        if message == "=/exit":
+            s.close()
+            return "exited"
+    # data = s.recv(256)
 
 
 def getHost():
