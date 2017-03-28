@@ -3,8 +3,9 @@
   @brief Instant messaging API
 */
 
-#include "headers/chat.h"
-#include "headers/helper.h"
+#define BUFFER_SIZE 256
+#define NUM_THREADS 8
+
 
 void checkError(int *sockfd, char *errormsg, char *successmsg);
 int initSocket(char *host, char *portno);
@@ -12,6 +13,10 @@ void initConnection(int *sockfd);
 void *initRecvSession(void *param);
 int processMessage(char *message);
 void searchCommand(char *command);
+
+#include "headers/helper.h"
+#include "headers/chat.h"
+#include "headers/websocket.h"
 
 int main(int argc, char *argv[]) {
     int sockfd;
@@ -70,27 +75,29 @@ void initConnection(int *sockfd) {
 
 void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE], httphead[BUFFER_SIZE];
     int state;
-    while (true) {
+    // while (true) {
+
+
         // receive message from the client to buffer
-        // select(numfds, &read_fds, NULL, NULL, NULL);
-        memset(&buffer, 0, sizeof(buffer));
-        state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
-        if (state < 0) {
-            printf("Reading failed\n");
-            pthread_exit(NULL);
-        }
+        // memset(&buffer, 0, sizeof(buffer));
+        // state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
+
+        printf("%s\n", get_handshake_key((unsigned char*)"dGhlIHNhbXBsZSBub25jZQ=="));
+
+        // open_handshake(newsockfd);
+        checkError(newsockfd, "handshaking failed", "handshaking succeed");
+
         processMessage(buffer);
         searchCommand(buffer);
 
         // send message to the client
-        // state = send(*newsockfd, "Message received", 16, 0);
-        // if (state < 0) {
-        //     printf("Connection lost\n");
-        //     exit(1);
-        // }
-    }
+        // memset(&httphead, 0, sizeof(httphead));
+        // state = send(*newsockfd, httphead, strlen(httphead), 0);
+        // checkError(newsockfd, "ERROR on accepting", "Accepted");
+
+    // }
     pthread_exit(NULL);
 }
 
@@ -99,22 +106,22 @@ void checkError(int *sockfd, char *errormsg, char *successmsg) {
         perror(errormsg);
         exit(1);
     }
-    printf("%s\n", successmsg);
+    printf("-- %s --\n", successmsg);
 
 }
 
 int processMessage(char *message) {
-    if (*message != '=') {
-        pthread_exit(NULL);
-        printf("Connection lost\n");
-        return -1;
-    }
-    message++;
+    // if (*message != '=') {
+    //     pthread_exit(NULL);
+    //     printf("Connection lost\n");
+    //     return -1;
+    // }
+    // message++;
     if (*message == '/') {
         searchCommand(message);
         return 1;
     } else {
-        printf("Here is the message: %s\n", message);
+        printf("Here is the message: %s", message);
         return 0;
     }
 }

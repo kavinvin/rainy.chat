@@ -10,17 +10,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <string.h>
 #include <netdb.h>
 #include <pthread.h>
-
-#define BUFFER_SIZE 256
-#define NUM_THREADS 8
 
 struct room_t;
 
