@@ -84,9 +84,9 @@ void *initRecvSession(void *param) {
         // memset(&buffer, 0, sizeof(buffer));
         // state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
 
-        printf("%s\n", get_handshake_key((unsigned char*)"dGhlIHNhbXBsZSBub25jZQ=="));
+        // printf("%s\n", get_handshake_key("Hello"));
 
-        // open_handshake(newsockfd);
+        open_handshake(newsockfd);
         checkError(newsockfd, "handshaking failed", "handshaking succeed");
 
         processMessage(buffer);

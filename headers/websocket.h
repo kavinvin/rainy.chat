@@ -1,22 +1,27 @@
 #include <openssl/sha.h>
 #include "base64.h"
 
-char * get_handshake_key(unsigned char *str);
+char * get_handshake_key(char *str);
 void open_handshake(int *sockfd);
 
-char * get_handshake_key(unsigned char *str) {
+char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
-    char *encoded;
-    size_t input_length = 19, output_length;
+    char magic[80], *encoded;
+    char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    size_t input_length = 20, output_length;
 
-    SHA1(str, sizeof(str) - 1, hash);
+    strcpy(magic, str);
+    strcat(magic, guid);
+    SHA1((unsigned char*)magic, strlen(magic), hash);
     for (int i=0; i<SHA_DIGEST_LENGTH; i++) {
-        printf("%02x\n", hash[i]);
+        printf("%04x\n", hash[i]);
     }
-    encoded = base64_encode(hash, sizeof(hash), (size_t*)&output_length);
+    encoded = base64_encode(hash, input_length, (size_t*)&output_length);
 
     printf("unsigned = %s\n", str);
     printf("encoded = %s\n", encoded);
+    printf("input_length = %zu\n", input_length);
+    printf("output_length = %zu\n", output_length);
 
     return encoded;
 }
@@ -44,7 +49,7 @@ void open_handshake(int *sockfd) {
     }
 
     // sha1, encode64
-    sec_ws_accept = get_handshake_key((unsigned char*)sec_ws_key);
+    sec_ws_accept = get_handshake_key(sec_ws_key);
 
     // compose server handshake message
     serv_handshake = calloc(200, sizeof(serv_handshake));
