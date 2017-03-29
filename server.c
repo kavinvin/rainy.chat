@@ -14,9 +14,9 @@ void *initRecvSession(void *param);
 int processMessage(char *message);
 void searchCommand(char *command);
 
-#include "headers/helper.h"
-#include "headers/chat.h"
-#include "headers/websocket.h"
+#include "include/helper.h"
+#include "include/chat.h"
+#include "include/websocket.h"
 
 int main(int argc, char *argv[]) {
     int sockfd;
