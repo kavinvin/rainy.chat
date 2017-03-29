@@ -76,7 +76,7 @@ void initConnection(int *sockfd) {
 
 void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
-    char buffer[BUFFER_SIZE], httphead[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE], message[BUFFER_SIZE];
     int state;
     // while (true) {
 
@@ -96,7 +96,7 @@ void *initRecvSession(void *param) {
 
             // send message to the client
             memset(&message, 0, sizeof(message));
-            message = "Hello!!";
+            strcpy(message, "Hello\n");
             state = send(*newsockfd, message, strlen(message), 0);
             checkError(newsockfd, "Error on sending message", "Message sent");
         }
