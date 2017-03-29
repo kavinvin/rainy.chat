@@ -1,5 +1,4 @@
 #include <openssl/sha.h>
-#include "h3.h"
 #include "base64.h"
 
 char * get_handshake_key(char *str);
@@ -7,14 +6,11 @@ void open_handshake(int *sockfd);
 
 char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
-    char *magic, *encoded;
+    char magic[80], *encoded;
     char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     size_t input_length = 20, output_length;
 
-    magic = calloc(300, sizeof(char));
-    printf("not yet\n");
-    strncpy(magic, str, 300);
-    printf("not yet\n");
+    strcpy(magic, str);
     strcat(magic, guid);
     SHA1((unsigned char*)magic, strlen(magic), hash);
     for (int i=0; i<SHA_DIGEST_LENGTH; i++) {
@@ -31,15 +27,13 @@ char * get_handshake_key(char *str) {
 }
 
 void open_handshake(int *sockfd) {
-    char cli_handshake[500], *hkey, *hvalue, *part, *serv_handshake, *sec_ws_key, *sec_ws_accept;
+    char cli_handshake[BUFFER_SIZE], *hkey, *hvalue, *part, *serv_handshake, *sec_ws_key, *sec_ws_accept;
     int state;
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    state = recv(*sockfd, cli_handshake, 500, 0);
+    state = recv(*sockfd, cli_handshake, BUFFER_SIZE, 0);
     checkError(sockfd, "ERROR on accepting", "Accepted");
-
-    printf("++++\n%s\n++++\n", cli_handshake);
 
     part = strtok(cli_handshake, "\r");
     while (1) {
@@ -58,7 +52,7 @@ void open_handshake(int *sockfd) {
     sec_ws_accept = get_handshake_key(sec_ws_key);
 
     // compose server handshake message
-    serv_handshake = calloc(200, sizeof(char));
+    serv_handshake = calloc(200, sizeof(serv_handshake));
     strcpy(serv_handshake, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ");
     strcat(serv_handshake, sec_ws_accept);
     strcat(serv_handshake, "\r\n\r\n");
