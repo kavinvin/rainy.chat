@@ -14,9 +14,9 @@ void *initRecvSession(void *param);
 int processMessage(char *message);
 void searchCommand(char *command);
 
-#include "headers/helper.h"
-#include "headers/chat.h"
-#include "headers/websocket.h"
+#include "include/helper.h"
+#include "include/chat.h"
+#include "include/websocket.h"
 
 int main(int argc, char *argv[]) {
     int sockfd;
@@ -75,29 +75,28 @@ void initConnection(int *sockfd) {
 
 void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
-    char buffer[BUFFER_SIZE], httphead[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE], message[BUFFER_SIZE];
     int state;
     // while (true) {
-
-
-        // receive message from the client to buffer
-        // memset(&buffer, 0, sizeof(buffer));
-        // state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
-
-        // printf("%s\n", get_handshake_key("Hello"));
 
         open_handshake(newsockfd);
         checkError(newsockfd, "handshaking failed", "handshaking succeed");
 
+        // receive message from the client to buffer
+        memset(&buffer, 0, sizeof(buffer));
+        state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
+
         processMessage(buffer);
         searchCommand(buffer);
-
         // send message to the client
-        // memset(&httphead, 0, sizeof(httphead));
-        // state = send(*newsockfd, httphead, strlen(httphead), 0);
+        // memset(&message, 0, sizeof(message));
+        // strcpy(message, "Hello Client");
+        // state = send(*newsockfd, message, strlen(message), 0);
         // checkError(newsockfd, "ERROR on accepting", "Accepted");
 
     // }
+    close(*newsockfd);
+    printf("newsockfd closed\n");
     pthread_exit(NULL);
 }
 
