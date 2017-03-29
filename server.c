@@ -3,7 +3,7 @@
   @brief Instant messaging API
 */
 
-#define BUFFER_SIZE 256
+#define BUFFER_SIZE 512
 #define NUM_THREADS 8
 
 
@@ -70,7 +70,8 @@ void initConnection(int *sockfd) {
     }
 
     // close socket
-    // close(*sockfd);
+    printf("sockfd closed\n");
+    close(*sockfd);
 }
 
 void *initRecvSession(void *param) {
@@ -80,24 +81,30 @@ void *initRecvSession(void *param) {
     // while (true) {
 
 
-        // receive message from the client to buffer
-        // memset(&buffer, 0, sizeof(buffer));
-        // state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
-
         // printf("%s\n", get_handshake_key("Hello"));
 
         open_handshake(newsockfd);
         checkError(newsockfd, "handshaking failed", "handshaking succeed");
 
-        processMessage(buffer);
-        searchCommand(buffer);
+        while (1) {
+            // receive message from the client to buffer
+            memset(&buffer, 0, sizeof(buffer));
+            state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
+            checkError(newsockfd, "Error on recieving message", "Message received");
+            // processMessage(buffer);
+            printf("Here is the message: %s\n", buffer);
 
-        // send message to the client
-        // memset(&httphead, 0, sizeof(httphead));
-        // state = send(*newsockfd, httphead, strlen(httphead), 0);
-        // checkError(newsockfd, "ERROR on accepting", "Accepted");
+            // send message to the client
+            memset(&message, 0, sizeof(message));
+            message = "Hello!!";
+            state = send(*newsockfd, message, strlen(message), 0);
+            checkError(newsockfd, "Error on sending message", "Message sent");
+        }
 
     // }
+
+    close(*newsockfd);
+    printf("newsockfd closed\n");
     pthread_exit(NULL);
 }
 
@@ -121,7 +128,7 @@ int processMessage(char *message) {
         searchCommand(message);
         return 1;
     } else {
-        printf("Here is the message: %s", message);
+        printf("Here is the message: %s\n", message);
         return 0;
     }
 }

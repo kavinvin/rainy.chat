@@ -6,26 +6,36 @@
 <body>
 
 <input type="text" name="command">
+<button id=submit></button>
 
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
 <script type="text/javascript">
+
+    function sendmsg(ws) {
+        ws.send("Message to send");
+        console.log("Message is sent...");
+    }
+
     // var ws = new WebSocket("ws:52.74.90.15:8080");
     ws = new WebSocket("ws://0.0.0.0:8080");
     console.log(ws);
+
     ws.onopen = function(){
-        // Web Socket is connected, send data using send()
-        ws.send("=Message to send");
-        console.log("Message is sent...");
+        $('#submit').on('click', function() {
+            sendmsg(ws);
+        });
     };
+
     ws.onmessage = function (evt){
         var received_msg = evt.data;
-        alert("Message is received...");
+        console.log("message received = received_msg");
     };
 
     // ws.onclose = function() {
     //     // websocket is closed.
-    //     alert("Connection is closed...");
+    //     console.log("Connection is closed...");
     // };
-    console.log('#someButton was clicked');
+    console.log('code ended');
 </script>
 
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script> -->

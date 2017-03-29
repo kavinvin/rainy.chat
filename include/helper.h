@@ -14,10 +14,21 @@
 
 #define SIZE 64
 
+#define max(a,b) \
+  ({ __typeof__ (a) _a = (a); \
+      __typeof__ (b) _b = (b); \
+    _a > _b ? _a : _b; })
+
+#define min(a,b) \
+  ({ __typeof__ (a) _a = (a); \
+      __typeof__ (b) _b = (b); \
+    _a < _b ? _a : _b; })
+
 int ord(char letter);
 char chr(int number);
 char * getLine();
-char * strip(char *string);
+char * slice(char *string, int start, int stop);
+char * strip(char *string, char stripper);
 char ** split(char *string, char delimiter);
 void strLower(char *string);
 
@@ -37,21 +48,32 @@ char * getLine() {
     return string;
 }
 
-// char * strip(char *string) {
-//     // strip whitespace from two sides of string
-//     int length = strlen(string);
-//     // slice of from the right
-//     for (int i=length-1; i>=0; i--) {
-//         if ( !isspace(string[i]) && isascii(string[i]) ) break;
-//         string[i] = '\0';
-//     }
-//     // increment pointer until find non-whitespace character
-//     while (*string) {
-//         if ( !isspace(*string) && isascii(*string) ) break;
-//         string++;
-//     }
-//     return string;
-// }
+char * slice(char *string, int start, int stop) {
+    size_t length = strlen(string);
+    start = min(length, start);
+    stop = min(length, stop);
+    for (int i=stop; i<length; i++) {
+        string[i] = '\0';
+    }
+    string+=start;
+    return string;
+}
+
+char * strip(char *string, char stripper) {
+    // strip whitespace from two sides of string
+    int length = strlen(string);
+    // slice of from the right
+    for (int i=length-1; i>=0; i--) {
+        if ( !isspace(string[i]) && string[i]!=stripper ) break;
+        string[i] = '\0';
+    }
+    // increment pointer until find non-whitespace character
+    while (*string) {
+        if ( !isspace(*string) && *string!=stripper ) break;
+        string++;
+    }
+    return string;
+}
 
 char ** split(char *string, char delimiter) {
     // split string with given delimiter, return pointers of string

@@ -13,15 +13,7 @@ char * get_handshake_key(char *str) {
     strcpy(magic, str);
     strcat(magic, guid);
     SHA1((unsigned char*)magic, strlen(magic), hash);
-    for (int i=0; i<SHA_DIGEST_LENGTH; i++) {
-        printf("%04x\n", hash[i]);
-    }
     encoded = base64_encode(hash, input_length, (size_t*)&output_length);
-
-    printf("unsigned = %s\n", str);
-    printf("encoded = %s\n", encoded);
-    printf("input_length = %zu\n", input_length);
-    printf("output_length = %zu\n", output_length);
 
     return encoded;
 }
@@ -49,7 +41,8 @@ void open_handshake(int *sockfd) {
     }
 
     // sha1, encode64
-    sec_ws_accept = get_handshake_key(sec_ws_key);
+    sec_ws_accept = slice(strip(get_handshake_key(sec_ws_key), '?'), 0, 29);
+    printf("==%s==\n", sec_ws_accept);
 
     // compose server handshake message
     serv_handshake = calloc(200, sizeof(serv_handshake));
