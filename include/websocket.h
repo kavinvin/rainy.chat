@@ -4,14 +4,14 @@
 typedef struct {
     uint8_t opcode; // 8 bits
     uint8_t mask; // 1 bit
-    uint64_t payloadlen; // 7 bits, 7+16 bits, or 7+64 bits
+    uint64_t len; // 7 bits, 7+16 bits, or 7+64 bits
     uint8_t maskkey[4]; // 0 or 4 bytes
-    char payload[12]; // x bytes
+    char *payload; // x bytes
 } http_frame;
 
 char * get_handshake_key(char *str);
-void open_handshake(int *sockfd);
-void checkError(int *sockfd, char *errormsg, char *successmsg);
+int open_handshake(int *sockfd);
+void checkError(int state, char *errormsg, char *successmsg);
 
 char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
@@ -27,14 +27,15 @@ char * get_handshake_key(char *str) {
     return encoded;
 }
 
-void open_handshake(int *sockfd) {
+int open_handshake(int *sockfd) {
     char cli_handshake[BUFFER_SIZE], *hkey, *hvalue, *part, *serv_handshake, *sec_ws_key, *sec_ws_accept;
     int state;
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    state = recv(*sockfd, cli_handshake, BUFFER_SIZE, 0);
-    checkError(sockfd, "ERROR on accepting", "Accepted");
+    checkError(recv(*sockfd, cli_handshake, BUFFER_SIZE, 0),
+               "ERROR on receiving handshake message",
+               "Receive handshake message");
 
     part = strtok(cli_handshake, "\r");
     while (1) {
@@ -63,11 +64,34 @@ void open_handshake(int *sockfd) {
     state = send(*sockfd, serv_handshake, strlen(serv_handshake), 0);
     printf("%s\n", serv_handshake);
 
+    return 1;
+
 }
 
+void ws_send(int *sockfd, char *message) {
 
-void checkError(int *sockfd, char *errormsg, char *successmsg) {
-    if (sockfd < 0) {
+    http_frame frame;
+    uint64_t bits;
+
+    // prepare client frame
+    frame.opcode = 129; // 10000001
+    frame.mask = 0;
+    frame.payload = message;
+    frame.len = strlen(frame.payload);
+    memcpy(&bits, frame.payload, frame.len);
+    bits = bits << 8 | frame.len;
+    bits = bits << 8 | frame.opcode;
+    printBits(sizeof(bits), &bits);
+
+    // send client_frame to the client
+    printf("%llu\n", 2+frame.len);
+    checkError(send(*sockfd, (void *)&bits, 2+frame.len, 0),
+               "Error on sending message",
+               "Message sent");
+}
+
+void checkError(int state, char *errormsg, char *successmsg) {
+    if (state < 0) {
         perror(errormsg);
         exit(1);
     }

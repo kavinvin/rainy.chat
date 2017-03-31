@@ -29,7 +29,9 @@ int initSocket(char *host, char *portno) {
 
     // create socket
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    checkError(&sockfd, "ERROR opening socket", "Socket created");
+    checkError(sockfd,
+               "ERROR opening socket",
+               "Socket created");
 
     // create server address structure
     memset(&server_address, 0, sizeof(server_address));
@@ -38,12 +40,14 @@ int initSocket(char *host, char *portno) {
     server_address.sin_addr.s_addr = inet_addr(host); // inet_addr convert dot notation into network address in Network Byte Order
 
     // bind the socket to the server address
-    state = bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address));
-    checkError(&state, "ERROR on binding", "Socket binded");
+    checkError(bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address)),
+               "ERROR on binding",
+               "Socket binded");
 
     // listening to the socket
-    state = listen(sockfd, 5);
-    checkError(&state, "ERROR on listening", "Listening");
+    checkError(listen(sockfd, 5),
+               "ERROR on listening",
+               "Listening");
 
     return sockfd;
 }
@@ -58,7 +62,9 @@ void initConnection(int *sockfd) {
     clilen = sizeof(cli_addr);
     newsockfd = malloc(sizeof(int));
     *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
-    checkError(newsockfd, "ERROR on accepting", "Accepted");
+    checkError(*newsockfd,
+               "ERROR on accepting",
+               "Accepted");
 
     // initRecvSession(&newsockfd);
     state = pthread_create(&tid, NULL, initRecvSession, (void *)newsockfd);
@@ -77,48 +83,21 @@ void *initRecvSession(void *param) {
     char buffer[BUFFER_SIZE], message[BUFFER_SIZE];
     int state;
 
-    http_frame cli_frame;
-    uint64_t header;
 
-    open_handshake(newsockfd);
-    checkError(newsockfd, "handshaking failed", "handshaking succeed");
+    checkError(open_handshake(newsockfd),
+               "handshaking failed",
+               "handshaking succeed");
 
     while (1) {
-        // receive message from the client to buffer
+        // receive message from client
         memset(&buffer, 0, sizeof(buffer));
-        state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
-        checkError(newsockfd, "Error on recieving message", "Message received");
-        // processMessage(buffer);
+        checkError(recv(*newsockfd, buffer, BUFFER_SIZE, 0),
+                   "Error on recieving message",
+                   "Message received");
         printf("Here is the message: %s\n", buffer);
 
-
-        printBits(sizeof(buffer), buffer);
-        // printf("\n");
-        // printf("\n");
-        // printBits(sizeof(cli_frame), &cli_frame);
-        // printf("\n");
-        // printf("\n");
-
-        // prepare cli_frame
-        cli_frame.opcode = 129;
-        cli_frame.mask = 0;
-        strcpy(cli_frame.payload, "Hello!");
-        cli_frame.payloadlen = strlen(cli_frame.payload);
-        memcpy(&header, cli_frame.payload, cli_frame.payloadlen);
-        // header = cli_frame.payload[5];
-        // header = header << 8 | cli_frame.payload[4];
-        // header = header << 8 | cli_frame.payload[3];
-        // header = header << 8 | cli_frame.payload[2];
-        // header = header << 8 | cli_frame.payload[1];
-        // header = header << 8 | cli_frame.payload[0];
-        header = header << 1 | cli_frame.mask;
-        header = header << 7 | cli_frame.payloadlen;
-        header = header << 8 | cli_frame.opcode;
-        printBits(sizeof(header), &header);
-
-        // send message to the client
-        state = send(*newsockfd, (void *)&header, sizeof(header), 0);
-        checkError(newsockfd, "Error on sending message", "Message sent");
+        // send message to client
+        ws_send(newsockfd, "Hello!");
     }
 
     close(*newsockfd);

@@ -11,20 +11,20 @@
 
 int main() {
 
-    http_frame cli_frame;
+    http_frame frame;
     uint64_t header;
 
     printf("\n");
     // printBits(sizeof(dataframe), &dataframe);
     // printf("\n");
     // printf("\n");
-    cli_frame.opcode = 129;
-    cli_frame.mask = 0;
-    strcpy(cli_frame.payload, "Hello!");
-    cli_frame.payloadlen = strlen(cli_frame.payload);
-    memcpy(&header, cli_frame.payload, cli_frame.payloadlen);
-    header = header << 8 | cli_frame.payloadlen;
-    header = header << 8 | cli_frame.opcode;
+    frame.opcode = 129;
+    frame.mask = 0;
+    strcpy(frame.payload, "Hello!");
+    frame.len = strlen(frame.payload);
+    memcpy(&header, frame.payload, frame.len);
+    header = header << 8 | frame.len;
+    header = header << 8 | frame.opcode;
     printBits(sizeof(header), &header);
 
 }
