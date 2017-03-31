@@ -77,7 +77,7 @@ void *initRecvSession(void *param) {
     char buffer[BUFFER_SIZE], message[BUFFER_SIZE];
     int state;
 
-    http_frame dataframe;
+    http_frame cli_frame;
     uint64_t header;
 
     open_handshake(newsockfd);
@@ -95,25 +95,26 @@ void *initRecvSession(void *param) {
         printBits(sizeof(buffer), buffer);
         // printf("\n");
         // printf("\n");
-        // printBits(sizeof(dataframe), &dataframe);
+        // printBits(sizeof(cli_frame), &cli_frame);
         // printf("\n");
         // printf("\n");
 
-        // prepare dataframe
-        dataframe.opcode = 129;
-        dataframe.mask = 0;
-        strcpy(dataframe.payload, "Hello!");
-        dataframe.payloadlen = strlen(dataframe.payload);
-        header = dataframe.payload[5];
-        header = header << 8 | dataframe.payload[4];
-        header = header << 8 | dataframe.payload[3];
-        header = header << 8 | dataframe.payload[2];
-        header = header << 8 | dataframe.payload[1];
-        header = header << 8 | dataframe.payload[0];
-        header = header << 1 | dataframe.mask;
-        header = header << 7 | dataframe.payloadlen;
-        header = header << 8 | dataframe.opcode;
-        // printBits(sizeof(header), &header);
+        // prepare cli_frame
+        cli_frame.opcode = 129;
+        cli_frame.mask = 0;
+        strcpy(cli_frame.payload, "Hello!");
+        cli_frame.payloadlen = strlen(cli_frame.payload);
+        memcpy(&header, cli_frame.payload, cli_frame.payloadlen);
+        // header = cli_frame.payload[5];
+        // header = header << 8 | cli_frame.payload[4];
+        // header = header << 8 | cli_frame.payload[3];
+        // header = header << 8 | cli_frame.payload[2];
+        // header = header << 8 | cli_frame.payload[1];
+        // header = header << 8 | cli_frame.payload[0];
+        header = header << 1 | cli_frame.mask;
+        header = header << 7 | cli_frame.payloadlen;
+        header = header << 8 | cli_frame.opcode;
+        printBits(sizeof(header), &header);
 
         // send message to the client
         state = send(*newsockfd, (void *)&header, sizeof(header), 0);
