@@ -29,9 +29,9 @@ int main() {
     header = header | dataframe.mask << 8;
     header = header | dataframe.payloadlen << 9;
     header = header | dataframe.payload[0] << 16;
-    header = header | dataframe.payload[1] << 24;
-    header = header | dataframe.payload[2] << 32;
-    header = header | dataframe.payload[3] << 40;
+    header = header | dataframe.payload[1] << 17;
+    header = header | dataframe.payload[2] << 18;
+    header = header | dataframe.payload[3] << 19;
     printBits(sizeof(header), &header);
     // uint16_t value = (highByte << 8) | lowByte ; C = (A<<4) | B ;
 

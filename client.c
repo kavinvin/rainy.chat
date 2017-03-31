@@ -67,40 +67,45 @@ int main(int argc, char *argv[]) {
     }
 
     // message from user to be sent
-    printf("Please enter the message: ");
-    memset(buffer, 0, 256);
-    fgets(buffer, 255, stdin);
+    // printf("Please enter the message: ");
+    // memset(buffer, 0, 256);
+    // fgets(buffer, 255, stdin);
 
-    // send/write
-    error = send(sockfd, buffer, strlen(buffer), 0);
-    if (error < 0) {
-        perror("ERROR writing to socket");
-        exit(1);
-    }
+    // // send/write
+    // error = send(sockfd, buffer, strlen(buffer), 0);
+    // if (error < 0) {
+    //     perror("ERROR writing to socket");
+    //     exit(1);
+    // }
 
-    // recieve/read
-    memset(buffer, 0, 256);
-    error = recv(sockfd, buffer, len, 0);
-    printf("Here is the message: %s\n", buffer);
-    if (error < 0) {
-        perror("ERROR reading from socket");
-        exit(1);
-    }
+    // // recieve/read
+    // memset(buffer, 0, 256);
+    // error = recv(sockfd, buffer, len, 0);
+    // printf("Here is the message: %s\n", buffer);
+    // if (error < 0) {
+    //     perror("ERROR reading from socket");
+    //     exit(1);
+    // }
 
     http_frame dataframe;
     uint64_t header;
 
+    // prepare dataframe
     dataframe.opcode = 129;
     dataframe.mask = 0;
-    dataframe.payloadlen = 4;
+    // dataframe.payloadlen = 113;
+    dataframe.payloadlen = 71;
     dataframe.payload[0] = 'H';
+    dataframe.payload[1] = 'e';
+    dataframe.payload[2] = 'l';
+    dataframe.payload[3] = 'o';
     header = dataframe.opcode;
-    header = header | dataframe.mask << 8;
-    header = header | dataframe.payloadlen << 9;
-    header = header | dataframe.payload[0] << 16;
-    header = header | dataframe.payload[0] << 17;
-    header = header | dataframe.payload[0] << 18;
-    header = header | dataframe.payload[0] << 19;
+    header = header << 1| dataframe.mask;
+    header = header << 7 | dataframe.payloadlen;
+    header = header << 8 | dataframe.payload[0];
+    header = header << 8 | dataframe.payload[1];
+    header = header << 8 | dataframe.payload[2];
+    header = header << 8 | dataframe.payload[3];
     send(sockfd, &header, sizeof(header), 0);
 
     printf("%s\n", buffer);
