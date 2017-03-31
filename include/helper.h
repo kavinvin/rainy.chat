@@ -31,6 +31,7 @@ char * slice(char *string, int start, int stop);
 char * strip(char *string, char stripper);
 char ** split(char *string, char delimiter);
 void strLower(char *string);
+void printBits(size_t const size, void const * const ptr);
 
 int ord(char letter) {
     return (int)letter - 48;
@@ -96,6 +97,24 @@ char ** split(char *string, char delimiter) {
         string++;
     }
     return parts;
+}
+
+//assumes big endian
+void printBits(size_t const size, void const * const ptr)
+{
+    unsigned char *b = (unsigned char*) ptr;
+    unsigned char byte;
+    int i, j;
+
+    for (i=0;i<size;i++)
+    {
+        for (j=0;j<8;j++)
+        {
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
 }
 
 void strLower(char *string) {

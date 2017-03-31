@@ -1,8 +1,17 @@
 #include <openssl/sha.h>
 #include "base64.h"
 
+typedef struct {
+    uint8_t opcode; // 8 bits
+    uint8_t mask; // 1 bit
+    uint64_t payloadlen; // 7 bits, 7+16 bits, or 7+64 bits
+    uint8_t maskkey[4]; // 0 or 4 bytes
+    uint8_t payload[12]; // x bytes
+} http_frame;
+
 char * get_handshake_key(char *str);
 void open_handshake(int *sockfd);
+void checkError(int *sockfd, char *errormsg, char *successmsg);
 
 char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
@@ -55,3 +64,14 @@ void open_handshake(int *sockfd) {
     printf("%s\n", serv_handshake);
 
 }
+
+
+void checkError(int *sockfd, char *errormsg, char *successmsg) {
+    if (sockfd < 0) {
+        perror(errormsg);
+        exit(1);
+    }
+    printf("-- %s --\n", successmsg);
+
+}
+

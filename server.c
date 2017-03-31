@@ -6,8 +6,6 @@
 #define BUFFER_SIZE 512
 #define NUM_THREADS 8
 
-
-void checkError(int *sockfd, char *errormsg, char *successmsg);
 int initSocket(char *host, char *portno);
 void initConnection(int *sockfd);
 void *initRecvSession(void *param);
@@ -78,44 +76,54 @@ void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
     char buffer[BUFFER_SIZE], message[BUFFER_SIZE];
     int state;
-    // while (true) {
+
+    http_frame dataframe;
+    uint64_t header;
+
+    open_handshake(newsockfd);
+    checkError(newsockfd, "handshaking failed", "handshaking succeed");
+
+    while (1) {
+        // receive message from the client to buffer
+        memset(&buffer, 0, sizeof(buffer));
+        state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
+        checkError(newsockfd, "Error on recieving message", "Message received");
+        // processMessage(buffer);
+        printf("Here is the message: %s\n", buffer);
 
 
-        // printf("%s\n", get_handshake_key("Hello"));
+        printBits(sizeof(buffer), buffer);
+        printf("\n");
+        printf("\n");
+        printBits(sizeof(dataframe), &dataframe);
+        printf("\n");
+        printf("\n");
 
-        open_handshake(newsockfd);
-        checkError(newsockfd, "handshaking failed", "handshaking succeed");
+        // prepare dataframe
+        dataframe.opcode = 129;
+        dataframe.mask = 0;
+        dataframe.payloadlen = 4;
+        dataframe.payload[0] = 'H';
+        header = dataframe.opcode;
+        header = header | dataframe.mask << 8;
+        header = header | dataframe.payloadlen << 9;
+        header = header | dataframe.payload[0] << 16;
+        header = header | dataframe.payload[0] << 17;
+        header = header | dataframe.payload[0] << 18;
+        header = header | dataframe.payload[0] << 19;
 
-        while (1) {
-            // receive message from the client to buffer
-            memset(&buffer, 0, sizeof(buffer));
-            state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
-            checkError(newsockfd, "Error on recieving message", "Message received");
-            // processMessage(buffer);
-            printf("Here is the message: %s\n", buffer);
-
-            // send message to the client
-            memset(&message, 0, sizeof(message));
-            strcpy(message, "Hello\n");
-            state = send(*newsockfd, message, strlen(message), 0);
-            checkError(newsockfd, "Error on sending message", "Message sent");
-        }
-
-    // }
+        // send message to the client
+        memset(&message, 0, sizeof(message));
+        strcpy(message, "Hello\n");
+        state = send(*newsockfd, (void *)&dataframe, strlen(buffer), 0);
+        checkError(newsockfd, "Error on sending message", "Message sent");
+    }
 
     close(*newsockfd);
     printf("newsockfd closed\n");
     pthread_exit(NULL);
 }
 
-void checkError(int *sockfd, char *errormsg, char *successmsg) {
-    if (sockfd < 0) {
-        perror(errormsg);
-        exit(1);
-    }
-    printf("-- %s --\n", successmsg);
-
-}
 
 int processMessage(char *message) {
     // if (*message != '=') {

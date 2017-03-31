@@ -1,20 +1,38 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include "include/helper.h"
 
-char * slice(char *string, int start, int stop) {
-    size_t length = strlen(string);
-    start = min(length, start);
-    stop = min(length, stop);
-    for (int i=stop; i<length; i++) {
-        string[i] = '\0';
-    }
-    string+=start;
-    return string;
-}
+#define BUFFER_SIZE 512
+#define NUM_THREADS 8
+
+#include "include/helper.h"
+#include "include/chat.h"
+#include "include/websocket.h"
 
 int main() {
-    char string[] = "??Hello???";
-    printf("%s\n", slice(string, 0, 4));
+
+    http_frame dataframe;
+    uint64_t header;
+
+    printf("\n");
+    printBits(sizeof(dataframe), &dataframe);
+    printf("\n");
+    printf("\n");
+    dataframe.opcode = 129;
+    dataframe.mask = 0;
+    dataframe.payloadlen = 4;
+    dataframe.payload[0] = 'H';
+    dataframe.payload[1] = 'e';
+    dataframe.payload[2] = 'l';
+    dataframe.payload[3] = 'o';
+    header = dataframe.opcode;
+    header = header | dataframe.mask << 8;
+    header = header | dataframe.payloadlen << 9;
+    header = header | dataframe.payload[0] << 16;
+    header = header | dataframe.payload[1] << 24;
+    header = header | dataframe.payload[2] << 32;
+    header = header | dataframe.payload[3] << 40;
+    printBits(sizeof(header), &header);
+    // uint16_t value = (highByte << 8) | lowByte ; C = (A<<4) | B ;
+
 }
