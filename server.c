@@ -68,8 +68,8 @@ void initConnection(int *sockfd) {
     }
 
     // close socket
-    printf("sockfd closed\n");
-    close(*sockfd);
+    // printf("sockfd closed\n");
+    // close(*sockfd);
 }
 
 void *initRecvSession(void *param) {
@@ -80,10 +80,10 @@ void *initRecvSession(void *param) {
     http_frame dataframe;
     uint64_t header;
 
-    // open_handshake(newsockfd);
+    open_handshake(newsockfd);
     checkError(newsockfd, "handshaking failed", "handshaking succeed");
 
-    // while (1) {
+    while (1) {
         // receive message from the client to buffer
         memset(&buffer, 0, sizeof(buffer));
         state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
@@ -102,25 +102,23 @@ void *initRecvSession(void *param) {
         // prepare dataframe
         dataframe.opcode = 129;
         dataframe.mask = 0;
-        dataframe.payloadlen = 113;
-        dataframe.payload[0] = 'H';
-        dataframe.payload[1] = 'e';
-        dataframe.payload[2] = 'l';
-        dataframe.payload[3] = 'o';
-        header = dataframe.opcode;
-        header = header | dataframe.mask << 8;
-        header = header | dataframe.payloadlen << 9;
-        header = header | dataframe.payload[0] << 16;
-        header = header | dataframe.payload[1] << 17;
-        header = header | dataframe.payload[2] << 18;
-        header = header | dataframe.payload[3] << 19;
+        strcpy(dataframe.payload, "Hello!");
+        dataframe.payloadlen = strlen(dataframe.payload);
+        header = dataframe.payload[5];
+        header = header << 8 | dataframe.payload[4];
+        header = header << 8 | dataframe.payload[3];
+        header = header << 8 | dataframe.payload[2];
+        header = header << 8 | dataframe.payload[1];
+        header = header << 8 | dataframe.payload[0];
+        header = header << 1 | dataframe.mask;
+        header = header << 7 | dataframe.payloadlen;
+        header = header << 8 | dataframe.opcode;
+        // printBits(sizeof(header), &header);
 
         // send message to the client
-        // memset(&message, 0, sizeof(message));
-        // strcpy(message, "Hello\n");
-        // state = send(*newsockfd, (void *)&dataframe, strlen(buffer), 0);
-        // checkError(newsockfd, "Error on sending message", "Message sent");
-    // }
+        state = send(*newsockfd, (void *)&header, sizeof(header), 0);
+        checkError(newsockfd, "Error on sending message", "Message sent");
+    }
 
     close(*newsockfd);
     printf("newsockfd closed\n");

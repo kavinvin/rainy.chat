@@ -92,20 +92,23 @@ int main(int argc, char *argv[]) {
 
     // prepare dataframe
     dataframe.opcode = 129;
+    dataframe.payloadlen = 4;
     dataframe.mask = 0;
-    // dataframe.payloadlen = 113;
-    dataframe.payloadlen = 71;
     dataframe.payload[0] = 'H';
     dataframe.payload[1] = 'e';
     dataframe.payload[2] = 'l';
-    dataframe.payload[3] = 'o';
-    header = dataframe.opcode;
-    header = header << 1| dataframe.mask;
-    header = header << 7 | dataframe.payloadlen;
-    header = header << 8 | dataframe.payload[0];
-    header = header << 8 | dataframe.payload[1];
-    header = header << 8 | dataframe.payload[2];
+    dataframe.payload[3] = 'l';
+    dataframe.payload[4] = 'o';
+    dataframe.payload[5] = '!';
+    header = dataframe.payload[5];
+    header = header << 8 | dataframe.payload[4];
     header = header << 8 | dataframe.payload[3];
+    header = header << 8 | dataframe.payload[2];
+    header = header << 8 | dataframe.payload[1];
+    header = header << 8 | dataframe.payload[0];
+    header = header << 1 | dataframe.mask;
+    header = header << 7 | dataframe.payloadlen;
+    header = header << 8 | dataframe.opcode;
     send(sockfd, &header, sizeof(header), 0);
 
     printf("%s\n", buffer);

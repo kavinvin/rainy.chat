@@ -6,7 +6,7 @@ typedef struct {
     uint8_t mask; // 1 bit
     uint64_t payloadlen; // 7 bits, 7+16 bits, or 7+64 bits
     uint8_t maskkey[4]; // 0 or 4 bytes
-    uint8_t payload[12]; // x bytes
+    char payload[12]; // x bytes
 } http_frame;
 
 char * get_handshake_key(char *str);
