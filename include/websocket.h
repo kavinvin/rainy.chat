@@ -28,7 +28,7 @@ char * get_handshake_key(char *str) {
 }
 
 int open_handshake(int *sockfd) {
-    char cli_handshake[BUFFER_SIZE], *hkey, *hvalue, *part, *serv_handshake, *sec_ws_key, *sec_ws_accept;
+    char cli_handshake[BUFFER_SIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
 
     // receive message from the client to buffer
@@ -51,11 +51,10 @@ int open_handshake(int *sockfd) {
     }
 
     // sha1, encode64
-    sec_ws_accept = slice(strip(get_handshake_key(sec_ws_key), '?'), 0, 29);
+    sec_ws_accept = slice(get_handshake_key(sec_ws_key), 0, 28);
     printf("==%s==\n", sec_ws_accept);
 
     // compose server handshake message
-    serv_handshake = calloc(200, sizeof(serv_handshake));
     strcpy(serv_handshake, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ");
     strcat(serv_handshake, sec_ws_accept);
     strcat(serv_handshake, "\r\n\r\n");

@@ -56,21 +56,23 @@ void initConnection(int *sockfd) {
     int *newsockfd, state;
     struct sockaddr_in cli_addr;
     socklen_t clilen;
-    pthread_t tid;
+    pthread_t tid[4];
 
-    // accept incoming request, create new client socket
-    clilen = sizeof(cli_addr);
-    newsockfd = malloc(sizeof(int));
-    *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
-    checkError(*newsockfd,
-               "ERROR on accepting",
-               "Accepted");
+    for (int i=0; i<4; i++) {
+        // accept incoming request, create new client socket
+        clilen = sizeof(cli_addr);
+        newsockfd = malloc(sizeof(int));
+        *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        checkError(*newsockfd,
+                   "ERROR on accepting",
+                   "Accepted");
 
-    // initRecvSession(&newsockfd);
-    state = pthread_create(&tid, NULL, initRecvSession, (void *)newsockfd);
-    if (state){
-        printf("ERROR; return code from pthread_create() is %d\n", state);
-        exit(-1);
+        // initRecvSession(&newsockfd);
+        state = pthread_create(&tid[i], NULL, initRecvSession, (void *)newsockfd);
+        if (state){
+            printf("ERROR; return code from pthread_create() is %d\n", state);
+            exit(-1);
+        }
     }
 
     // close socket
