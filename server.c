@@ -3,7 +3,7 @@
   @brief Instant messaging API
 */
 
-#define BUFFER_SIZE 512
+#define BUFFERSIZE 1024
 #define NUM_THREADS 8
 
 int initSocket(char *host, char *portno);
@@ -29,7 +29,9 @@ int initSocket(char *host, char *portno) {
 
     // create socket
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    checkError(&sockfd, "ERROR opening socket", "Socket created");
+    checkError(sockfd,
+               "ERROR opening socket",
+               "Socket created");
 
     // create server address structure
     memset(&server_address, 0, sizeof(server_address));
@@ -38,12 +40,14 @@ int initSocket(char *host, char *portno) {
     server_address.sin_addr.s_addr = inet_addr(host); // inet_addr convert dot notation into network address in Network Byte Order
 
     // bind the socket to the server address
-    state = bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address));
-    checkError(&state, "ERROR on binding", "Socket binded");
+    checkError(bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address)),
+               "ERROR on binding",
+               "Socket binded");
 
     // listening to the socket
-    state = listen(sockfd, 5);
-    checkError(&state, "ERROR on listening", "Listening");
+    checkError(listen(sockfd, 5),
+               "ERROR on listening",
+               "Listening");
 
     return sockfd;
 }
@@ -52,19 +56,23 @@ void initConnection(int *sockfd) {
     int *newsockfd, state;
     struct sockaddr_in cli_addr;
     socklen_t clilen;
-    pthread_t tid;
+    pthread_t tid[4];
 
-    // accept incoming request, create new client socket
-    clilen = sizeof(cli_addr);
-    newsockfd = malloc(sizeof(int));
-    *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
-    checkError(newsockfd, "ERROR on accepting", "Accepted");
+    for (int i=0; i<4; i++) {
+        // accept incoming request, create new client socket
+        clilen = sizeof(cli_addr);
+        newsockfd = malloc(sizeof(int));
+        *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        checkError(*newsockfd,
+                   "ERROR on accepting",
+                   "Accepted");
 
-    // initRecvSession(&newsockfd);
-    state = pthread_create(&tid, NULL, initRecvSession, (void *)newsockfd);
-    if (state){
-        printf("ERROR; return code from pthread_create() is %d\n", state);
-        exit(-1);
+        // initRecvSession(&newsockfd);
+        state = pthread_create(&tid[i], NULL, initRecvSession, (void *)newsockfd);
+        if (state){
+            printf("ERROR; return code from pthread_create() is %d\n", state);
+            exit(-1);
+        }
     }
 
     // close socket
@@ -74,54 +82,30 @@ void initConnection(int *sockfd) {
 
 void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
-    char buffer[BUFFER_SIZE], message[BUFFER_SIZE];
-    int state;
+    char buffer[BUFFERSIZE], message[BUFFERSIZE];
+    http_frame frame;
 
-    http_frame dataframe;
-    uint64_t header;
-
-    open_handshake(newsockfd);
-    checkError(newsockfd, "handshaking failed", "handshaking succeed");
+    checkError(open_handshake(newsockfd),
+               "handshaking failed",
+               "handshaking succeed");
 
     while (1) {
-        // receive message from the client to buffer
-        memset(&buffer, 0, sizeof(buffer));
-        state = recv(*newsockfd, buffer, BUFFER_SIZE, 0);
-        checkError(newsockfd, "Error on recieving message", "Message received");
-        // processMessage(buffer);
-        printf("Here is the message: %s\n", buffer);
+        // receive message from client
+        memset(&frame, 0, sizeof(frame));
+        ws_recv(newsockfd, &frame);
+        printf("Here is the message from no.%d: %s\n", *newsockfd, frame.payload);
 
-
-        printBits(sizeof(buffer), buffer);
-        // printf("\n");
-        // printf("\n");
-        // printBits(sizeof(dataframe), &dataframe);
-        // printf("\n");
-        // printf("\n");
-
-        // prepare dataframe
-        dataframe.opcode = 129;
-        dataframe.mask = 0;
-        strcpy(dataframe.payload, "Hello!");
-        dataframe.payloadlen = strlen(dataframe.payload);
-        header = dataframe.payload[5];
-        header = header << 8 | dataframe.payload[4];
-        header = header << 8 | dataframe.payload[3];
-        header = header << 8 | dataframe.payload[2];
-        header = header << 8 | dataframe.payload[1];
-        header = header << 8 | dataframe.payload[0];
-        header = header << 1 | dataframe.mask;
-        header = header << 7 | dataframe.payloadlen;
-        header = header << 8 | dataframe.opcode;
-        // printBits(sizeof(header), &header);
-
-        // send message to the client
-        state = send(*newsockfd, (void *)&header, sizeof(header), 0);
-        checkError(newsockfd, "Error on sending message", "Message sent");
+        // send message to client
+        memset(&frame, 0, sizeof(frame));
+        frame.opcode = 129;
+        frame.has_mask = 0;
+        frame.payload = "Hello!";
+        frame.len = strlen(frame.payload);
+        ws_send(newsockfd, &frame);
     }
 
     close(*newsockfd);
-    printf("newsockfd closed\n");
+    printf("newsockfd no.%d closed\n", *newsockfd);
     pthread_exit(NULL);
 }
 

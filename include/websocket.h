@@ -1,17 +1,25 @@
+/**
+  @file  websocket.h
+  @brief A header file include websocket function
+*/
+
+#ifndef WEBSOCKET_H_
+#define WEBSOCKET_H_
+
 #include <openssl/sha.h>
 #include "base64.h"
 
 typedef struct {
     uint8_t opcode; // 8 bits
-    uint8_t mask; // 1 bit
-    uint64_t payloadlen; // 7 bits, 7+16 bits, or 7+64 bits
-    uint8_t maskkey[4]; // 0 or 4 bytes
-    char payload[12]; // x bytes
+    uint8_t has_mask; // 1 bit
+    uint64_t len; // 7 bits, 7+16 bits, or 7+64 bits
+    uint8_t mask[4]; // 0 or 4 bytes
+    char *payload; // x bytes
 } http_frame;
 
 char * get_handshake_key(char *str);
-void open_handshake(int *sockfd);
-void checkError(int *sockfd, char *errormsg, char *successmsg);
+int open_handshake(int *sockfd);
+void checkError(int state, char *errormsg, char *successmsg);
 
 char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
@@ -27,34 +35,34 @@ char * get_handshake_key(char *str) {
     return encoded;
 }
 
-void open_handshake(int *sockfd) {
-    char cli_handshake[BUFFER_SIZE], *hkey, *hvalue, *part, *serv_handshake, *sec_ws_key, *sec_ws_accept;
+int open_handshake(int *sockfd) {
+    char cli_handshake[BUFFERSIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    state = recv(*sockfd, cli_handshake, BUFFER_SIZE, 0);
-    checkError(sockfd, "ERROR on accepting", "Accepted");
+    checkError(recv(*sockfd, cli_handshake, BUFFERSIZE, 0),
+               "ERROR on receiving handshake message",
+               "Receive handshake message");
 
     part = strtok(cli_handshake, "\r");
     while (1) {
-        hkey = strtok(NULL, "\r\n:");
+        hkey = strtok(NULL, "\r\n ");
         if (hkey == NULL) {
             break;
         }
-        hvalue = strtok(NULL, " \r");
-        if (strcmp(hkey, "Sec-WebSocket-Key") == 0) {
+        hvalue = strtok(NULL, "\r");
+        if (strcmp(hkey, "Sec-WebSocket-Key:") == 0) {
             sec_ws_key = hvalue;
         }
         printf("%s: %s\n", hkey, hvalue);
     }
 
     // sha1, encode64
-    sec_ws_accept = slice(strip(get_handshake_key(sec_ws_key), '?'), 0, 29);
+    sec_ws_accept = slice(get_handshake_key(sec_ws_key), 0, 28);
     printf("==%s==\n", sec_ws_accept);
 
     // compose server handshake message
-    serv_handshake = calloc(200, sizeof(serv_handshake));
     strcpy(serv_handshake, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ");
     strcat(serv_handshake, sec_ws_accept);
     strcat(serv_handshake, "\r\n\r\n");
@@ -63,15 +71,74 @@ void open_handshake(int *sockfd) {
     state = send(*sockfd, serv_handshake, strlen(serv_handshake), 0);
     printf("%s\n", serv_handshake);
 
+    return 1;
+
 }
 
+void ws_send(int *sockfd, http_frame *frame) {
+    char buffer[BUFFERSIZE];
 
-void checkError(int *sockfd, char *errormsg, char *successmsg) {
-    if (sockfd < 0) {
+    // write http frame to buffer
+    buffer[0] = frame->opcode;
+    buffer[1] = frame->len;
+    memcpy(buffer+2, frame->payload, frame->len);
+
+    // send buffer to client
+    checkError(send(*sockfd, (void *)&buffer, 2+frame->len, 0),
+               "Error on sending message",
+               "Message sent");
+}
+
+void ws_recv(int *sockfd, http_frame *frame) {
+    int length, has_mask, skip;
+    char buffer[BUFFERSIZE], mask[4];
+    checkError(recv(*sockfd, buffer, BUFFERSIZE, 0),
+               "Error on recieving message",
+               "Message received");
+
+    frame->has_mask = buffer[1] & 0x80 ? 1 : 0;
+    length = buffer[1] & 0x7f;
+    if (length < 126) {
+        // get mask
+        skip = 6; // 2 + 0 + 4
+        frame->len = length;
+        memcpy(frame->mask, buffer + 2, sizeof(frame->mask));
+    } else if (length == 126) {
+        // 2 byte length
+        uint16_t len16;
+        memcpy(&len16, buffer + 2, sizeof(uint16_t));
+        // get mask
+        skip = 8; // 2 + 2 + 4
+        frame->len = len16;
+        memcpy(frame->mask, buffer + 4, sizeof(frame->mask));
+    } else if (length == 127) {
+        // 8 byte length
+        uint64_t len64;
+        memcpy(&len64, buffer + 2, sizeof(uint64_t));
+        // get mask
+        skip = 14; // 2 + 8 + 4
+        frame->len = len64;
+        memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
+    }
+    frame->payload = malloc(frame->len);
+    memset(frame->payload, '\0', frame->len);
+    memcpy(frame->payload, buffer + skip, frame->len);
+
+    // remove mask from data
+    for (uint64_t i=0; i<frame->len; i++){
+        frame->payload[i] = frame->payload[i] ^ frame->mask[i % 4];
+    }
+
+}
+
+void checkError(int state, char *errormsg, char *successmsg) {
+    if (state < 0) {
         perror(errormsg);
         exit(1);
     }
     printf("-- %s --\n", successmsg);
 
 }
+
+#endif
 
