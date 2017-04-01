@@ -1,11 +1,19 @@
+/**
+  @file  websocket.h
+  @brief A header file include websocket function
+*/
+
+#ifndef WEBSOCKET_H_
+#define WEBSOCKET_H_
+
 #include <openssl/sha.h>
 #include "base64.h"
 
 typedef struct {
     uint8_t opcode; // 8 bits
-    uint8_t mask; // 1 bit
+    uint8_t has_mask; // 1 bit
     uint64_t len; // 7 bits, 7+16 bits, or 7+64 bits
-    uint8_t maskkey[4]; // 0 or 4 bytes
+    uint8_t mask[4]; // 0 or 4 bytes
     char *payload; // x bytes
 } http_frame;
 
@@ -28,23 +36,23 @@ char * get_handshake_key(char *str) {
 }
 
 int open_handshake(int *sockfd) {
-    char cli_handshake[BUFFER_SIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
+    char cli_handshake[BUFFERSIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    checkError(recv(*sockfd, cli_handshake, BUFFER_SIZE, 0),
+    checkError(recv(*sockfd, cli_handshake, BUFFERSIZE, 0),
                "ERROR on receiving handshake message",
                "Receive handshake message");
 
     part = strtok(cli_handshake, "\r");
     while (1) {
-        hkey = strtok(NULL, "\r\n:");
+        hkey = strtok(NULL, "\r\n ");
         if (hkey == NULL) {
             break;
         }
-        hvalue = strtok(NULL, " \r");
-        if (strcmp(hkey, "Sec-WebSocket-Key") == 0) {
+        hvalue = strtok(NULL, "\r");
+        if (strcmp(hkey, "Sec-WebSocket-Key:") == 0) {
             sec_ws_key = hvalue;
         }
         printf("%s: %s\n", hkey, hvalue);
@@ -67,26 +75,60 @@ int open_handshake(int *sockfd) {
 
 }
 
-void ws_send(int *sockfd, char *message) {
+void ws_send(int *sockfd, http_frame *frame) {
+    char buffer[BUFFERSIZE];
 
-    http_frame frame;
-    uint64_t bits;
+    // write http frame to buffer
+    buffer[0] = frame->opcode;
+    buffer[1] = frame->len;
+    memcpy(buffer+2, frame->payload, frame->len);
 
-    // prepare client frame
-    frame.opcode = 129; // 10000001
-    frame.mask = 0;
-    frame.payload = message;
-    frame.len = strlen(frame.payload);
-    memcpy(&bits, frame.payload, frame.len);
-    bits = bits << 8 | frame.len;
-    bits = bits << 8 | frame.opcode;
-    printBits(sizeof(bits), &bits);
-
-    // send client_frame to the client
-    printf("%llu\n", 2+frame.len);
-    checkError(send(*sockfd, (void *)&bits, 2+frame.len, 0),
+    // send buffer to client
+    checkError(send(*sockfd, (void *)&buffer, 2+frame->len, 0),
                "Error on sending message",
                "Message sent");
+}
+
+void ws_recv(int *sockfd, http_frame *frame) {
+    int length, has_mask, skip;
+    char buffer[BUFFERSIZE], mask[4];
+    checkError(recv(*sockfd, buffer, BUFFERSIZE, 0),
+               "Error on recieving message",
+               "Message received");
+
+    frame->has_mask = buffer[1] & 0x80 ? 1 : 0;
+    length = buffer[1] & 0x7f;
+    if (length < 126) {
+        // get mask
+        skip = 6; // 2 + 0 + 4
+        frame->len = length;
+        memcpy(frame->mask, buffer + 2, sizeof(frame->mask));
+    } else if (length == 126) {
+        // 2 byte length
+        uint16_t len16;
+        memcpy(&len16, buffer + 2, sizeof(uint16_t));
+        // get mask
+        skip = 8; // 2 + 2 + 4
+        frame->len = len16;
+        memcpy(frame->mask, buffer + 4, sizeof(frame->mask));
+    } else if (length == 127) {
+        // 8 byte length
+        uint64_t len64;
+        memcpy(&len64, buffer + 2, sizeof(uint64_t));
+        // get mask
+        skip = 14; // 2 + 8 + 4
+        frame->len = len64;
+        memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
+    }
+    frame->payload = malloc(frame->len);
+    memset(frame->payload, '\0', frame->len);
+    memcpy(frame->payload, buffer + skip, frame->len);
+
+    // remove mask from data
+    for (uint64_t i=0; i<frame->len; i++){
+        frame->payload[i] = frame->payload[i] ^ frame->mask[i % 4];
+    }
+
 }
 
 void checkError(int state, char *errormsg, char *successmsg) {
@@ -97,4 +139,6 @@ void checkError(int state, char *errormsg, char *successmsg) {
     printf("-- %s --\n", successmsg);
 
 }
+
+#endif
 

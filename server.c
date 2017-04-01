@@ -3,7 +3,7 @@
   @brief Instant messaging API
 */
 
-#define BUFFER_SIZE 512
+#define BUFFERSIZE 1024
 #define NUM_THREADS 8
 
 int initSocket(char *host, char *portno);
@@ -82,9 +82,8 @@ void initConnection(int *sockfd) {
 
 void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
-    char buffer[BUFFER_SIZE], message[BUFFER_SIZE];
-    int state;
-
+    char buffer[BUFFERSIZE], message[BUFFERSIZE];
+    http_frame frame;
 
     checkError(open_handshake(newsockfd),
                "handshaking failed",
@@ -92,18 +91,21 @@ void *initRecvSession(void *param) {
 
     while (1) {
         // receive message from client
-        memset(&buffer, 0, sizeof(buffer));
-        checkError(recv(*newsockfd, buffer, BUFFER_SIZE, 0),
-                   "Error on recieving message",
-                   "Message received");
-        printf("Here is the message: %s\n", buffer);
+        memset(&frame, 0, sizeof(frame));
+        ws_recv(newsockfd, &frame);
+        printf("Here is the message from no.%d: %s\n", *newsockfd, frame.payload);
 
         // send message to client
-        ws_send(newsockfd, "Hello!");
+        memset(&frame, 0, sizeof(frame));
+        frame.opcode = 129;
+        frame.has_mask = 0;
+        frame.payload = "Hello!";
+        frame.len = strlen(frame.payload);
+        ws_send(newsockfd, &frame);
     }
 
     close(*newsockfd);
-    printf("newsockfd closed\n");
+    printf("newsockfd no.%d closed\n", *newsockfd);
     pthread_exit(NULL);
 }
 
