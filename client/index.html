@@ -5,53 +5,47 @@
 </head>
 <body>
 
-<input type="text" name="command">
+<div id="chatlog">
+
+</div>
+
+<input id="chat" type="text" name="command">
 <button id=submit></button>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
 <script type="text/javascript">
 
-    function sendmsg(ws) {
-        ws.send("Message to send");
-        console.log("Message is sent...");
+    function connect(host, port) {
+        ws = new WebSocket('ws://' + host + ':' + '8080');
+        console.log(ws);
+        return ws
     }
 
-    // ws = new WebSocket("ws://52.74.90.15:8080");
-    ws = new WebSocket("ws://0.0.0.0:8080");
-    console.log(ws);
+    function sendMessage() {
+        message = $('#chat').val();
+        ws.send(message);
+    }
 
-    ws.onopen = function(){
-        $('#submit').on('click', function() {
-            sendmsg(ws);
-        });
-        ws.onmessage = function (evt){
-            var received_msg = evt.data;
-            // alert("message received = "+ received_msg);
-            console.log("message received = "+ received_msg);
-        };
-    };
+    function showMessage(message){
+        $('#chatlog').append(message + '<br>');
+        console.log('Message received:' + message);
+    }
+
+    // ws = connect('52.74.90.15', '8080');
+    ws = connect('0.0.0.0', '8080');
+    ws.onopen = function() {
+        $('#submit').on('click', sendMessage);
+    }
+    ws.onmessage = function(event) {
+        showMessage(event.data);
+    }
 
     // ws.onclose = function() {
     //     // websocket is closed.
     //     console.log("Connection is closed...");
     // };
-    console.log('code ended');
+    console.log('script ended');
 </script>
-
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.min.js"></script> -->
-
-<!-- <script type="text/javascript">
-
-    var data;
-    chrome.sockets.tcp.create({}, function(createInfo) {
-        chrome.sockets.tcp.connect(createInfo.socketId, "0.0.0.0", 8080, function(result) {
-            chrome.sockets.tcp.send(createInfo.socketId, data, function(sendInfo) {
-                console.log(sendInfo.resultCode);
-            })
-        })
-    });
-
-</script> -->
 
 </body>
 </html>

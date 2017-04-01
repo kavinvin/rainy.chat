@@ -11,15 +11,13 @@
 
 typedef struct {
     uint8_t opcode; // 8 bits
-    uint8_t has_mask; // 1 bit
-    uint64_t len; // 7 bits, 7+16 bits, or 7+64 bits
     uint8_t mask[4]; // 0 or 4 bytes
-    char *payload; // x bytes
+    uint64_t size; // 1, 2 or 8 bytes
+    char *message; // x bytes
 } http_frame;
 
 char * get_handshake_key(char *str);
 int open_handshake(int *sockfd);
-void checkError(int state, char *errormsg, char *successmsg);
 
 char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
@@ -80,63 +78,57 @@ void ws_send(int *sockfd, http_frame *frame) {
 
     // write http frame to buffer
     buffer[0] = frame->opcode;
-    buffer[1] = frame->len;
-    memcpy(buffer+2, frame->payload, frame->len);
+    buffer[1] = frame->size;
+    memcpy(buffer+2, frame->message, frame->size);
 
     // send buffer to client
-    checkError(send(*sockfd, (void *)&buffer, 2+frame->len, 0),
+    checkError(send(*sockfd, (void *)&buffer, 2+frame->size, 0),
                "Error on sending message",
                "Message sent");
 }
 
 void ws_recv(int *sockfd, http_frame *frame) {
-    int length, has_mask, skip;
+    int length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
     checkError(recv(*sockfd, buffer, BUFFERSIZE, 0),
                "Error on recieving message",
                "Message received");
 
-    frame->has_mask = buffer[1] & 0x80 ? 1 : 0;
+    hasmask = buffer[1] & 0x80 ? 1 : 0;
     length = buffer[1] & 0x7f;
     if (length < 126) {
         // get mask
         skip = 6; // 2 + 0 + 4
-        frame->len = length;
+        frame->size = length;
         memcpy(frame->mask, buffer + 2, sizeof(frame->mask));
     } else if (length == 126) {
+        printf("%s\n", "size = 126");
         // 2 byte length
         uint16_t len16;
         memcpy(&len16, buffer + 2, sizeof(uint16_t));
         // get mask
         skip = 8; // 2 + 2 + 4
-        frame->len = len16;
+        frame->size = ntohs(len16);
         memcpy(frame->mask, buffer + 4, sizeof(frame->mask));
     } else if (length == 127) {
+        printf("%s\n", "size = 127");
         // 8 byte length
         uint64_t len64;
         memcpy(&len64, buffer + 2, sizeof(uint64_t));
         // get mask
         skip = 14; // 2 + 8 + 4
-        frame->len = len64;
+        frame->size = ntohs(len64);
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
-    frame->payload = malloc(frame->len);
-    memset(frame->payload, '\0', frame->len);
-    memcpy(frame->payload, buffer + skip, frame->len);
+    printf("%llu\n", frame->size);
+    frame->message = malloc(frame->size);
+    memset(frame->message, '\0', frame->size);
+    memcpy(frame->message, buffer + skip, frame->size);
 
     // remove mask from data
-    for (uint64_t i=0; i<frame->len; i++){
-        frame->payload[i] = frame->payload[i] ^ frame->mask[i % 4];
+    for (uint64_t i=0; i<frame->size; i++){
+        frame->message[i] = frame->message[i] ^ frame->mask[i % 4];
     }
-
-}
-
-void checkError(int state, char *errormsg, char *successmsg) {
-    if (state < 0) {
-        perror(errormsg);
-        exit(1);
-    }
-    printf("-- %s --\n", successmsg);
 
 }
 
