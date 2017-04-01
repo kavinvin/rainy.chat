@@ -6,53 +6,24 @@
 #define BUFFERSIZE 1024
 #define NUM_THREADS 8
 
-int initSocket(char *host, char *portno);
-void initConnection(int *sockfd);
+void initClient(int *sockfd);
 void *initRecvSession(void *param);
-int processMessage(char *message);
-void searchCommand(char *command);
+int parseMessage(int *sockfd, char *message);
+void getCommand(char *command);
 
 #include "include/helper.h"
 #include "include/chat.h"
+#include "include/socket.h"
 #include "include/websocket.h"
 
 int main(int argc, char *argv[]) {
     int sockfd;
     sockfd = initSocket(argv[1], argv[2]);
-    initConnection(&sockfd);
+    initClient(&sockfd);
     pthread_exit(NULL);
 }
 
-int initSocket(char *host, char *portno) {
-    int sockfd, state;
-    struct sockaddr_in server_address;
-
-    // create socket
-    sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    checkError(sockfd,
-               "ERROR opening socket",
-               "Socket created");
-
-    // create server address structure
-    memset(&server_address, 0, sizeof(server_address));
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(atoi(portno)); // htons converts from host byte order to network byte order
-    server_address.sin_addr.s_addr = inet_addr(host); // inet_addr convert dot notation into network address in Network Byte Order
-
-    // bind the socket to the server address
-    checkError(bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address)),
-               "ERROR on binding",
-               "Socket binded");
-
-    // listening to the socket
-    checkError(listen(sockfd, 5),
-               "ERROR on listening",
-               "Listening");
-
-    return sockfd;
-}
-
-void initConnection(int *sockfd) {
+void initClient(int *sockfd) {
     int *newsockfd, state;
     struct sockaddr_in cli_addr;
     socklen_t clilen;
@@ -82,7 +53,7 @@ void initConnection(int *sockfd) {
 
 void *initRecvSession(void *param) {
     int *newsockfd = (int*)param;
-    char buffer[BUFFERSIZE], message[BUFFERSIZE];
+    char *message;
     http_frame frame;
 
     checkError(open_handshake(newsockfd),
@@ -93,14 +64,15 @@ void *initRecvSession(void *param) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
         ws_recv(newsockfd, &frame);
-        printf("Here is the message from no.%d: %s\n", *newsockfd, frame.payload);
+
+        message = frame.message;
+        parseMessage(newsockfd, message);
 
         // send message to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
-        frame.has_mask = 0;
-        frame.payload = "Hello!";
-        frame.len = strlen(frame.payload);
+        frame.message = message;
+        frame.size = strlen(frame.message);
         ws_send(newsockfd, &frame);
     }
 
@@ -109,26 +81,23 @@ void *initRecvSession(void *param) {
     pthread_exit(NULL);
 }
 
-
-int processMessage(char *message) {
-    // if (*message != '=') {
-    //     pthread_exit(NULL);
-    //     printf("Connection lost\n");
-    //     return -1;
-    // }
-    // message++;
+int parseMessage(int *sockfd, char *message) {
     if (*message == '/') {
-        searchCommand(message);
+        // command mode
+        getCommand(message);
         return 1;
     } else {
-        printf("Here is the message: %s\n", message);
+        // message mode
+        printf("Here is the message from no.%d: %s\n", *sockfd, message);
         return 0;
     }
 }
 
-void searchCommand(char *command) {
+void getCommand(char *command) {
     if (strcmp(command, "/exit") == 0) {
-        printf("exited\n");
+        printf("Exited\n");
         pthread_exit(NULL);
+    } else {
+        printf("Command not found\n");
     }
 }
