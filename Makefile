@@ -19,4 +19,4 @@ base64.o: base64.c base64.h
 	$(CC) -c base64.c
 
 clean:
-	rm -f $(EXEC) $(OBJECTS)
+	rm -f $(EXEC) *.o
