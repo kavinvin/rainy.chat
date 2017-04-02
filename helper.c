@@ -1,7 +1,8 @@
 /**
-  @file  helper.h
-  @brief A header file which included common header functions
+  @file  helper.c
+  @brief header file included helper functions
 */
+
 
 #include "helper.h"
 

@@ -1,6 +1,6 @@
 /**
   @file  helper.h
-  @brief A header file which included common header functions
+  @brief header file included helper functions
 */
 
 #ifndef HELPER_H_
@@ -10,15 +10,9 @@
 
 #define SIZE 64
 
-#define max(a,b) \
-  ({ __typeof__ (a) _a = (a); \
-      __typeof__ (b) _b = (b); \
-    _a > _b ? _a : _b; })
+#define max(a,b) a > b ? a : b
 
-#define min(a,b) \
-  ({ __typeof__ (a) _a = (a); \
-      __typeof__ (b) _b = (b); \
-    _a < _b ? _a : _b; })
+#define min(a,b) a < b ? a : b
 
 int ord(char letter);
 char chr(int number);

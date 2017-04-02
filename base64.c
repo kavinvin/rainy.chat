@@ -1,6 +1,5 @@
 /**
   @file  base64.c
-  @brief A header file which included common header functions
 */
 
 #include "base64.h"
