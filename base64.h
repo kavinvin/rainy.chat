@@ -1,3 +1,7 @@
+/**
+  @file  base64.h
+*/
+
 #include "includes.h"
 
 #ifndef BASE64_H_

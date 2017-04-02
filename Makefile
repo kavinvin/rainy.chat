@@ -1,22 +1,17 @@
 CC = gcc
 CFLAGS = -lcrypto -pthread -std=c11
-OBJECTS = socket.o websocket.o helper.o base64.o
+OBJECTS = server.o socket.o websocket.o helper.o base64.o
 EXEC = server
 
 $(EXEC): $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) $(EXEC).c -o $(EXEC)
+	$(CC) -o $(EXEC) $(CFLAGS) $(OBJECTS)
 
+server.o: server.c
 socket.o: socket.c socket.h
-	$(CC) -c socket.c
-
 websocket.o: websocket.c websocket.h base64.h
-	$(CC) -c websocket.c
-
 helper.o: helper.c helper.h
-	$(CC) -c helper.c
-
 base64.o: base64.c base64.h
-	$(CC) -c base64.c
 
+.PHONY : clean
 clean:
 	rm -f $(EXEC) *.o

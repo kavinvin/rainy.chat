@@ -1,6 +1,6 @@
 /**
   @file  helper.h
-  @brief A header file which included common header functions
+  @brief header file included helper functions
 */
 
 #ifndef HELPER_H_
