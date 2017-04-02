@@ -3,18 +3,12 @@
   @brief Instant messaging API
 */
 
-#define BUFFERSIZE 1024
-#define NUM_THREADS 8
-
 void initClient(int *sockfd);
 void *initRecvSession(void *param);
 int parseMessage(int *sockfd, char *message);
 void getCommand(char *command);
 
-#include "include/helper.h"
-#include "include/chat.h"
-#include "include/socket.h"
-#include "include/websocket.h"
+#include "websocket.h"
 
 int main(int argc, char *argv[]) {
     int sockfd;
@@ -38,7 +32,6 @@ void initClient(int *sockfd) {
                    "ERROR on accepting",
                    "Accepted");
 
-        // initRecvSession(&newsockfd);
         state = pthread_create(&tid[i], NULL, initRecvSession, (void *)newsockfd);
         if (state){
             printf("ERROR; return code from pthread_create() is %d\n", state);

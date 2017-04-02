@@ -1,8 +1,9 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
+/**
+  @file  base64.c
+  @brief A header file which included common header functions
+*/
 
-void build_decoding_table();
+#include "base64.h"
 
 static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                                 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
@@ -14,7 +15,6 @@ static char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                                 '4', '5', '6', '7', '8', '9', '+', '/'};
 static char *decoding_table = NULL;
 static int mod_table[] = {0, 2, 1};
-
 
 char *base64_encode(const unsigned char *data,
                     size_t input_length,

@@ -3,21 +3,7 @@
   @brief A header file include websocket function
 */
 
-#ifndef WEBSOCKET_H_
-#define WEBSOCKET_H_
-
-#include <openssl/sha.h>
-#include "base64.h"
-
-typedef struct {
-    uint8_t opcode; // 8 bits
-    uint8_t mask[4]; // 0 or 4 bytes
-    uint64_t size; // 1, 2 or 8 bytes
-    char *message; // x bytes
-} http_frame;
-
-char * get_handshake_key(char *str);
-int open_handshake(int *sockfd);
+#include "websocket.h"
 
 char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
@@ -131,6 +117,3 @@ void ws_recv(int *sockfd, http_frame *frame) {
     }
 
 }
-
-#endif
-
