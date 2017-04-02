@@ -1,10 +1,9 @@
 /**
-  @file  socket.h
+  @file  socket.c
   @brief A header file include server socket
 */
 
-void checkError(int state, char *errormsg, char *successmsg);
-int initSocket(char *host, char *portno);
+#include "socket.h"
 
 int initSocket(char *host, char *portno) {
     int sockfd, state;

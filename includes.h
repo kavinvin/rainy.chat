@@ -1,16 +1,17 @@
 /**
-  @file  chat.h
+  @file  includes.h
   @brief A header file to apply common interface and language between
          the client and a server sides.
 */
 
-#ifndef CHAT_H_
-#define CHAT_H_
+#ifndef INCLUDES_H_
+#define INCLUDES_H_
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -20,13 +21,16 @@
 #include <netdb.h>
 #include <pthread.h>
 
+#define BUFFERSIZE 1024
+#define NUM_THREADS 8
+
 struct room_t;
 
 struct user_t {
     char name[64];
     int id;
     int socket[2];
-    struct room *rooms[10];
+    struct room_t *rooms[10];
 };
 
 struct room_t {
