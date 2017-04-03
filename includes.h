@@ -27,16 +27,17 @@
 struct room_t;
 
 struct user_t {
-    char name[64];
-    int id;
-    int socket[2];
-    struct room_t *rooms[10];
+    char *name;
+    int socket;
+    pthread_t thread_id;
+    struct user_t *next;
+    // struct room_t *rooms;
 };
 
 struct room_t {
-    char name[64];
-    int id;
-    struct user_t *users[20];
+    char name[51];
+    struct room_t *next;
+    struct user_t *users;
 };
 
 typedef struct user_t User;

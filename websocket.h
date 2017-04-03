@@ -19,9 +19,9 @@ typedef struct {
 } http_frame;
 
 char * get_handshake_key(char *str);
-int open_handshake(int *sockfd);
-void ws_send(int *sockfd, http_frame *frame);
-void ws_recv(int *sockfd, http_frame *frame);
+int open_handshake(int sockfd);
+void ws_send(int sockfd, http_frame *frame);
+void ws_recv(int sockfd, http_frame *frame);
 
 #endif
 

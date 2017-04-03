@@ -19,13 +19,15 @@ char * get_handshake_key(char *str) {
     return encoded;
 }
 
-int open_handshake(int *sockfd) {
+int open_handshake(int sockfd) {
     char cli_handshake[BUFFERSIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
 
+    printf("%d\n", sockfd);
+
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    checkError(recv(*sockfd, cli_handshake, BUFFERSIZE, 0),
+    checkError(recv(sockfd, cli_handshake, BUFFERSIZE, 0),
                "ERROR on receiving handshake message",
                "Receive handshake message");
 
@@ -52,14 +54,14 @@ int open_handshake(int *sockfd) {
     strcat(serv_handshake, "\r\n\r\n");
 
     // return handshake from the server
-    state = send(*sockfd, serv_handshake, strlen(serv_handshake), 0);
+    state = send(sockfd, serv_handshake, strlen(serv_handshake), 0);
     printf("%s\n", serv_handshake);
 
     return 1;
 
 }
 
-void ws_send(int *sockfd, http_frame *frame) {
+void ws_send(int sockfd, http_frame *frame) {
     char buffer[BUFFERSIZE];
 
     // write http frame to buffer
@@ -68,15 +70,15 @@ void ws_send(int *sockfd, http_frame *frame) {
     memcpy(buffer+2, frame->message, frame->size);
 
     // send buffer to client
-    checkError(send(*sockfd, (void *)&buffer, 2+frame->size, 0),
+    checkError(send(sockfd, (void *)&buffer, 2+frame->size, 0),
                "Error on sending message",
                "Message sent");
 }
 
-void ws_recv(int *sockfd, http_frame *frame) {
+void ws_recv(int sockfd, http_frame *frame) {
     int length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
-    checkError(recv(*sockfd, buffer, BUFFERSIZE, 0),
+    checkError(recv(sockfd, buffer, BUFFERSIZE, 0),
                "Error on recieving message",
                "Message received");
 
