@@ -3,12 +3,7 @@
   @brief Instant messaging API
 */
 
-void initClient(int *sockfd);
-void *initRecvSession(void *param);
-int parseMessage(int *sockfd, char *message);
-void getCommand(char *command);
-
-#include "websocket.h"
+#include "server.h"
 
 int main(int argc, char *argv[]) {
     int sockfd;
@@ -18,21 +13,22 @@ int main(int argc, char *argv[]) {
 }
 
 void initClient(int *sockfd) {
-    int *newsockfd, state;
+    int state;
     struct sockaddr_in cli_addr;
-    socklen_t clilen;
-    pthread_t tid[4];
+    socklen_t clilen = sizeof(cli_addr);
+    pthread_t *thread_id;
+    User *user;
 
-    for (int i=0; i<4; i++) {
+    for (int i=0; i<10; i++) {
         // accept incoming request, create new client socket
-        clilen = sizeof(cli_addr);
-        newsockfd = malloc(sizeof(int));
-        *newsockfd = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
-        checkError(*newsockfd,
+        user = malloc(sizeof(User));
+        user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        thread_id = malloc(sizeof(pthread_t));
+        checkError(user->socket,
                    "ERROR on accepting",
                    "Accepted");
 
-        state = pthread_create(&tid[i], NULL, initRecvSession, (void *)newsockfd);
+        state = pthread_create(thread_id, NULL, initRecvSession, (void *)user);
         if (state){
             printf("ERROR; return code from pthread_create() is %d\n", state);
             exit(-1);
@@ -44,44 +40,45 @@ void initClient(int *sockfd) {
     // close(*sockfd);
 }
 
-void *initRecvSession(void *param) {
-    int *newsockfd = (int*)param;
+void *initRecvSession(void *param_user) {
+    User *user = (User*)param_user;
     char *message;
     http_frame frame;
+    printf("%d\n", user->socket);
 
-    checkError(open_handshake(newsockfd),
+    checkError(open_handshake(user->socket),
                "handshaking failed",
                "handshaking succeed");
 
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
-        ws_recv(newsockfd, &frame);
+        ws_recv(user->socket, &frame);
 
         message = frame.message;
-        parseMessage(newsockfd, message);
+        parseMessage(user->socket, message);
 
         // send message to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
         frame.message = message;
         frame.size = strlen(frame.message);
-        ws_send(newsockfd, &frame);
+        ws_send(user->socket, &frame);
     }
 
-    close(*newsockfd);
-    printf("newsockfd no.%d closed\n", *newsockfd);
+    close(user->socket);
+    printf("newsockfd no.%d closed\n", user->socket);
     pthread_exit(NULL);
 }
 
-int parseMessage(int *sockfd, char *message) {
+int parseMessage(int sockfd, char *message) {
     if (*message == '/') {
         // command mode
         getCommand(message);
         return 1;
     } else {
         // message mode
-        printf("Here is the message from no.%d: %s\n", *sockfd, message);
+        printf("Here is the message from no.%d: %s\n", sockfd, message);
         return 0;
     }
 }
