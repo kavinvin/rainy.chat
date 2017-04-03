@@ -8,7 +8,6 @@
 
 #include <openssl/sha.h>
 #include "base64.h"
-#include "helper.h"
 #include "socket.h"
 
 typedef struct {

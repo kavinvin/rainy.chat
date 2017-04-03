@@ -24,23 +24,4 @@
 #define BUFFERSIZE 1024
 #define NUM_THREADS 8
 
-struct room_t;
-
-struct user_t {
-    char *name;
-    int socket;
-    pthread_t thread_id;
-    struct user_t *next;
-    // struct room_t *rooms;
-};
-
-struct room_t {
-    char name[51];
-    struct room_t *next;
-    struct user_t *users;
-};
-
-typedef struct user_t User;
-typedef struct room_t Room;
-
 #endif

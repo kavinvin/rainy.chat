@@ -1,26 +1,29 @@
 CC = gcc
-CFLAGS = -lcrypto -std=c11
-# CFLAGS = -lcrypto -pthread -std=c11
-OBJECTS = server.o socket.o websocket.o helper.o base64.o
+CFLAGS = -lcrypto -pthread -std=c11
+OBJECTS = server.o socket.o websocket.o helper.o base64.o structure.o
 EXEC = server
 
 $(EXEC): $(OBJECTS)
 	$(CC) -o $(EXEC) $(CFLAGS) $(OBJECTS)
 
-server.o: server.c websocket.h
+server.o: server.c server.h websocket.o
 	$(CC) -c server.c
 
-socket.o: socket.c socket.h helper.h
-	$(CC) -c socket.c
-
-websocket.o: websocket.c websocket.h socket.h helper.h
+websocket.o: websocket.c websocket.h socket.o base64.o
 	$(CC) -c websocket.c
 
-helper.o: helper.c helper.h includes.h
+socket.o: socket.c socket.h helper.o
+	$(CC) -c socket.c
+
+helper.o: helper.c helper.h structure.o
 	$(CC) -c helper.c
 
-base64.o: base64.c base64.h
+structure.o: structure.c structure.h includes.h
+	$(CC) -c structure.c
+
+base64.o: base64.c base64.h includes.h
 	$(CC) -c base64.c
+
 
 .PHONY : clean
 clean:

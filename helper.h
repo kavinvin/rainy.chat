@@ -6,7 +6,7 @@
 #ifndef HELPER_H_
 #define HELPER_H_
 
-#include "includes.h"
+#include "structure.h"
 
 #define SIZE 64
 

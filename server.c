@@ -3,12 +3,7 @@
   @brief Instant messaging API
 */
 
-void initClient(int *sockfd);
-void *initRecvSession(void *param);
-int parseMessage(int sockfd, char *message);
-void getCommand(char *command);
-
-#include "websocket.h"
+#include "server.h"
 
 int main(int argc, char *argv[]) {
     int sockfd;
