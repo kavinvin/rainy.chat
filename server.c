@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 }
 
 void initClient(int *sockfd) {
-    int *newsockfd, state;
+    int state;
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     pthread_t *thread_id;
@@ -24,7 +24,7 @@ void initClient(int *sockfd) {
         user = malloc(sizeof(User));
         user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
         thread_id = malloc(sizeof(pthread_t));
-        checkError(*newsockfd,
+        checkError(user->socket,
                    "ERROR on accepting",
                    "Accepted");
 

@@ -4,7 +4,7 @@ OBJECTS = server.o socket.o websocket.o helper.o base64.o structure.o
 EXEC = server
 
 $(EXEC): $(OBJECTS)
-	$(CC) -o $(EXEC) $(CFLAGS) $(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) -o $(EXEC)
 
 server.o: server.c server.h websocket.o
 	$(CC) -c server.c
