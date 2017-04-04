@@ -64,7 +64,7 @@ void *initRecvSession(void *param_user) {
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
-        ws_recv(user->socket, &frame);
+        ws_recv(this, &frame);
 
         message = frame.message;
         parseMessage(user, message);

@@ -3,7 +3,6 @@
   @brief header file included helper functions
 */
 
-
 #include "helper.h"
 
 int ord(char letter) {
@@ -72,17 +71,15 @@ char ** split(char *string, char delimiter) {
     return parts;
 }
 
-//assumes big endian
+// assumes big endian
 void printBits(size_t const size, void const * const ptr)
 {
     unsigned char *b = (unsigned char*) ptr;
     unsigned char byte;
     int i, j;
 
-    for (i=0;i<size;i++)
-    {
-        for (j=0;j<8;j++)
-        {
+    for (i=0;i<size;i++) {
+        for (j=0;j<8;j++) {
             byte = (b[i] >> j) & 1;
             printf("%u", byte);
         }

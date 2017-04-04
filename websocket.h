@@ -19,10 +19,11 @@ typedef struct {
 
 char * get_handshake_key(char *str);
 int open_handshake(int sockfd);
-void ws_send(int sockfd, http_frame *frame);
-void ws_recv(int sockfd, http_frame *frame);
+void ws_send(Node *this, http_frame *frame);
+void ws_recv(Node *this, http_frame *frame);
 void printname(Node *cursor, void *none);
 void broadcast(Node *cursor, void *frame);
+void removeUser(Node *this);
 
 #endif
 

@@ -25,16 +25,21 @@ Node * insert(Node *head, void *data) {
         new_node->prev = new_node;
         return new_node;
     }
-    if (head->next == head) {
-        Node *new_node = create(data, head, head);
-        head->next = new_node;
-        head->prev = new_node;
-        return new_node;
-    }
     Node *new_node = create(data, head, head->prev);
     head->prev->next = new_node;
     head->prev = new_node;
     return new_node;
+}
+
+void delete(Node *this) {
+    if (this == NULL) {
+        return;
+    }
+    this->prev->next = this->next;
+    this->next->prev = this->prev;
+    this->next = NULL;
+    this->prev = NULL;
+    free(this);
 }
 
 void map(Node *this, callback function, void *argument) {
