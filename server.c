@@ -18,6 +18,7 @@ void initClient(int *sockfd) {
     socklen_t clilen = sizeof(cli_addr);
     pthread_t *thread_id;
     User *user = malloc(sizeof(User));
+    tail = head;
 
     for (int i=0; i<10; i++) {
         // accept incoming request, create new client socket
@@ -27,16 +28,13 @@ void initClient(int *sockfd) {
                    "ERROR on accepting",
                    "Accepted");
 
-
-        // problem: want to send head of linked list to pthread, but it chaged over time
-        // solution1: make head and tail global variable
-
         state = pthread_create(thread_id, NULL, initRecvSession, (void *)user);
         if (state){
             printf("ERROR; return code from pthread_create() is %d\n", state);
             exit(-1);
         }
 
+        // should test if successfully create a user
         user = malloc(sizeof(User));
 
     }

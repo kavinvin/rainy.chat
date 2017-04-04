@@ -42,9 +42,10 @@ typedef struct thread_shared ThreadShared;
 
 typedef void (*callback)(node *data, void *argument);
 node * create(void *data, node *next);
-node * prepend(void *data, node *head);
+node * prepend(void *data, node *head);node * append(void *data, node *tail);
 void map(node *head, callback function, void *argument);
 
 node *head;
+node *tail;
 
 #endif

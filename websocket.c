@@ -27,9 +27,10 @@ int open_handshake(int sockfd) {
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    checkError(recv(sockfd, cli_handshake, BUFFERSIZE, 0),
-               "ERROR on receiving handshake message",
-               "Receive handshake message");
+    if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
+        printf("%s\n", "ERROR on receiving handshake message");
+        pthread_exit(NULL);
+    }
 
     part = strtok(cli_handshake, "\r");
     while (1) {
