@@ -17,22 +17,28 @@ void initClient(int *sockfd) {
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     pthread_t *thread_id;
-    User *user;
+    User *user = malloc(sizeof(User));
 
     for (int i=0; i<10; i++) {
         // accept incoming request, create new client socket
-        user = malloc(sizeof(User));
         user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
         thread_id = malloc(sizeof(pthread_t));
         checkError(user->socket,
                    "ERROR on accepting",
                    "Accepted");
 
+
+        // problem: want to send head of linked list to pthread, but it chaged over time
+        // solution1: make head and tail global variable
+
         state = pthread_create(thread_id, NULL, initRecvSession, (void *)user);
         if (state){
             printf("ERROR; return code from pthread_create() is %d\n", state);
             exit(-1);
         }
+
+        user = malloc(sizeof(User));
+
     }
 
     // close socket
@@ -44,7 +50,13 @@ void *initRecvSession(void *param_user) {
     User *user = (User*)param_user;
     char *message;
     http_frame frame;
-    printf("%d\n", user->socket);
+
+    // assign temporary username
+    user->name = calloc(20, sizeof(char));
+    strcpy(user->name, "kavinvin");
+
+    // prepend user to the linked list
+    head = prepend(user, head);
 
     checkError(open_handshake(user->socket),
                "handshaking failed",
@@ -63,7 +75,10 @@ void *initRecvSession(void *param_user) {
         frame.opcode = 129;
         frame.message = message;
         frame.size = strlen(frame.message);
-        ws_send(user->socket, &frame);
+        // ws_send(user->socket, &frame);
+
+        map(head, broadcast, &frame);
+
     }
 
     close(user->socket);

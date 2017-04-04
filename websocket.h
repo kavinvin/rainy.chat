@@ -21,6 +21,8 @@ char * get_handshake_key(char *str);
 int open_handshake(int sockfd);
 void ws_send(int sockfd, http_frame *frame);
 void ws_recv(int sockfd, http_frame *frame);
+void printname(node *cursor, void *none);
+void broadcast(node *cursor, void *frame);
 
 #endif
 
