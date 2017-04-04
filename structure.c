@@ -6,89 +6,41 @@
 
 #include "structure.h"
 
-node * create(void *data, node *next) {
-    node* new_node = (node*)malloc(sizeof(node));
+Node * create(void *data, Node *next, Node *prev) {
+    Node *new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
         printf("Error creating a new node.\n");
-        exit(0);
+        pthread_exit(NULL);
     }
     new_node->data = data;
     new_node->next = next;
-
+    new_node->prev = prev;
     return new_node;
 }
 
-node * prepend(void *data, node *head) {
-    node *new_head = create(data, head);
-    return new_head;
-}
-
-node * append(void *data, node *tail) {
-    node *new_tail = create(data, NULL);
-    tail->next = new_tail;
-    return new_tail;
-}
-
-node * getBefore(node *current, node *head) {
-    node *cursor = head;
-    while (cursor != NULL) {
-        if (cursor->next == current) {
-            return cursor;
-        }
-        cursor = cursor->next;
-    }
-    return NULL;
-}
-
-node * removeFront(node *head) {
+Node * insert(Node *head, void *data) {
     if (head == NULL) {
-        return NULL;
+        Node *new_node = create(data, NULL, NULL);
+        new_node->next = new_node;
+        new_node->prev = new_node;
+        return new_node;
     }
-    node *front = head;
-    head = head->next;
-    front->next = NULL;
-    // if head is the last node in the list
-    if (front == head) {
-        head = NULL;
+    if (head->next == head) {
+        Node *new_node = create(data, head, head);
+        head->next = new_node;
+        head->prev = new_node;
+        return new_node;
     }
-    free(front);
-    return head;
+    Node *new_node = create(data, head, head->prev);
+    head->prev->next = new_node;
+    head->prev = new_node;
+    return new_node;
 }
 
-node * removeBack(node *tail) {
-    if (tail == NULL) {
-        return NULL;
-    }
-    node *back = tail;
-    tail = getBefore(tail);
-    if (tail != NULL) {
-        tail->next = NULL;
-    }
-    free(back);
-    return tail;
-}
-
-node * pop(node *toRemove, node *head, node *tail) {
-    if (toRemove == head) {
-        head = removeFront(head);
-        return head;
-    }
-    if (toRemove->next == NULL) {
-        tail = removeBack(head);
-        return tail;
-    }
-    node *before = getBefore(toRemove, head);
-    if (before =! NULL) {
-        before->next = NULL;
-    }
-    toRemove->next = NULL;
-    free(toRemove);
-    return head;
-}
-
-void map(node *head, callback function, void *argument) {
-    node* cursor = head;
-    while (cursor != NULL) {
+void map(Node *this, callback function, void *argument) {
+    Node *cursor = this->next;
+    User *user = (User*)cursor->data;
+    while (cursor != this && cursor != NULL) {
         function(cursor, argument);
         cursor = cursor->next;
     }

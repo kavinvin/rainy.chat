@@ -121,12 +121,12 @@ void ws_recv(int sockfd, http_frame *frame) {
 
 }
 
-void printname(node *cursor, void *none) {
+void printname(Node *cursor, void *none) {
     User *user = (User*)(cursor->data);
     printf("%s\n", user->name);
 }
 
-void broadcast(node *cursor, void *frame_void) {
+void broadcast(Node *cursor, void *frame_void) {
     User *user = (User*)(cursor->data);
     http_frame *frame = (http_frame*)frame_void;
 

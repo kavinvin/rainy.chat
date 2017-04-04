@@ -17,10 +17,12 @@ void initClient(int *sockfd) {
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     pthread_t *thread_id;
-    User *user = malloc(sizeof(User));
-    tail = head;
-
+    User *user;
     for (int i=0; i<10; i++) {
+
+        // create user: should test if successfully create a user
+        user = malloc(sizeof(User));
+
         // accept incoming request, create new client socket
         user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
         thread_id = malloc(sizeof(pthread_t));
@@ -33,9 +35,6 @@ void initClient(int *sockfd) {
             printf("ERROR; return code from pthread_create() is %d\n", state);
             exit(-1);
         }
-
-        // should test if successfully create a user
-        user = malloc(sizeof(User));
 
     }
 
@@ -53,12 +52,14 @@ void *initRecvSession(void *param_user) {
     user->name = calloc(20, sizeof(char));
     strcpy(user->name, "kavinvin");
 
-    // prepend user to the linked list
-    head = prepend(user, head);
 
     checkError(open_handshake(user->socket),
                "handshaking failed",
                "handshaking succeed");
+
+    // prepend user to the linked list
+    head = insert(head, user);
+    Node *this = head;
 
     while (1) {
         // receive message from client
@@ -66,16 +67,14 @@ void *initRecvSession(void *param_user) {
         ws_recv(user->socket, &frame);
 
         message = frame.message;
-        parseMessage(user->socket, message);
+        parseMessage(user, message);
 
         // send message to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
         frame.message = message;
         frame.size = strlen(frame.message);
-        // ws_send(user->socket, &frame);
-
-        map(head, broadcast, &frame);
+        map(this, broadcast, &frame);
 
     }
 
@@ -84,14 +83,14 @@ void *initRecvSession(void *param_user) {
     pthread_exit(NULL);
 }
 
-int parseMessage(int sockfd, char *message) {
+int parseMessage(User *user, char *message) {
     if (*message == '/') {
         // command mode
         getCommand(message);
         return 1;
     } else {
         // message mode
-        printf("Here is the message from no.%d: %s\n", sockfd, message);
+        printf("Here is the message from no.%d: %s\n", user->socket, message);
         return 0;
     }
 }
