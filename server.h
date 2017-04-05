@@ -9,8 +9,9 @@
 #include "websocket.h"
 
 void initClient(int *sockfd);
-void *initRecvSession(void *param);
-int parseMessage(User *user, char *message);
-void getCommand(char *command);
+void *initRecvSession(void *user_param);
+int parseMessage(Node *this, char *message);
+void clientCommand(Node *this, char *command);
+void serverCommand(char *command);
 
 #endif

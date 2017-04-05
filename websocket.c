@@ -26,6 +26,7 @@ int open_handshake(int sockfd) {
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
+    showStatus("Handshaking");
     if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
         printf("%s\n", "ERROR on receiving handshake message");
         close(sockfd);
@@ -45,6 +46,8 @@ int open_handshake(int sockfd) {
         printf("%s: %s\n", hkey, hvalue);
     }
 
+    printf("handshake key: %s\n", sec_ws_key);
+
     // sha1, encode64
     sec_ws_accept = slice(get_handshake_key(sec_ws_key), 0, 28);
 
@@ -55,7 +58,6 @@ int open_handshake(int sockfd) {
 
     // return handshake from the server
     state = send(sockfd, serv_handshake, strlen(serv_handshake), 0);
-    printf("%s\n", serv_handshake);
 
     return 1;
 
@@ -136,7 +138,7 @@ void broadcast(Node *cursor, void *frame_void) {
 }
 
 void removeNode(Node *this) {
-    printf("%s\n", "Removing node...");
+    printf("%s\n", "Removing node..");
     if (this == head) {
         head = head->next;
         if (head == head->next) {
@@ -149,7 +151,7 @@ void removeNode(Node *this) {
 }
 
 void removeUser(User *user) {
-    printf("%s\n", "Removing user...");
+    printf("%s\n", "Removing user..");
     close(user->socket);
     free(user->name);
     // pthread_detach(user->thread_id);

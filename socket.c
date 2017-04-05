@@ -11,9 +11,11 @@ int initSocket(char *host, char *portno) {
 
     // create socket
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    checkError(sockfd,
-               "ERROR opening socket",
-               "Socket created");
+    showStatus("Creating socket");
+    if (sockfd < 0) {
+        perror("ERROR opening socket");
+        exit(1);
+    }
 
     // create server address structure
     memset(&server_address, 0, sizeof(server_address));
@@ -22,22 +24,18 @@ int initSocket(char *host, char *portno) {
     server_address.sin_addr.s_addr = inet_addr(host); // inet_addr convert dot notation into network address in Network Byte Order
 
     // bind the socket to the server address
-    checkError(bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address)),
-               "ERROR on binding",
-               "Socket binded");
+    showStatus("Binding");
+    if (bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+        perror("ERROR on binding");
+        exit(1);
+    }
 
     // listening to the socket
-    checkError(listen(sockfd, 5),
-               "ERROR on listening",
-               "Listening");
+    showStatus("Listening");
+    if (listen(sockfd, 5)) {
+        perror("ERROR on listening");
+        exit(1);
+    }
 
     return sockfd;
-}
-
-void checkError(int state, char *errormsg, char *successmsg) {
-    if (state < 0) {
-        perror(errormsg);
-        pthread_exit(NULL);
-    }
-    printf("-- %s --\n", successmsg);
 }

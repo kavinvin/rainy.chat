@@ -90,3 +90,7 @@ void printBits(size_t const size, void const * const ptr)
 void strLower(char *string) {
     for (; *string; ++string) *string = tolower(*string);
 }
+
+void showStatus(char *string) {
+    printf("-- %s --\n", string);
+}

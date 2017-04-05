@@ -8,7 +8,6 @@
 
 #include "helper.h"
 
-void checkError(int state, char *errormsg, char *successmsg);
 int initSocket(char *host, char *portno);
 
 #endif

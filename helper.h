@@ -22,5 +22,6 @@ char * strip(char *string, char stripper);
 char ** split(char *string, char delimiter);
 void printBits(size_t const size, void const * const ptr);
 void strLower(char *string);
+void showStatus(char *string);
 
 #endif
