@@ -20,14 +20,22 @@ void initClient(int *sockfd) {
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     pthread_t *thread_id;
+    pthread_attr_t attr;
     User *user;
-    for (int i=0; i<10; i++) {
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    while (1) {
 
         // create user: should test if successfully create a user
         user = malloc(sizeof(User));
 
         // accept incoming request, create new client socket
         user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        if (user->socket < 0) {
+            perror("ERROR on accepting");
+        }
         thread_id = malloc(sizeof(pthread_t));
         checkError(user->socket,
                    "ERROR on accepting",
@@ -36,7 +44,9 @@ void initClient(int *sockfd) {
         state = pthread_create(thread_id, NULL, initRecvSession, (void *)user);
         if (state){
             printf("ERROR; return code from pthread_create() is %d\n", state);
-            exit(-1);
+            close(user->socket);
+            free(thread_id);
+            free(user);
         }
 
     }
@@ -53,6 +63,7 @@ void *initRecvSession(void *param_user) {
 
     // assign temporary username
     user->name = calloc(20, sizeof(char));
+    user->thread_id = pthread_self();
     strcpy(user->name, "anonymous");
 
 
@@ -61,16 +72,22 @@ void *initRecvSession(void *param_user) {
                "handshaking succeed");
 
     // prepend user to the linked list
-    head = insert(head, user);
-    Node *this = head;
+    Node *this = insert(head, user);
+    if (this == NULL) {
+        removeUser(user);
+    }
+    head = this;
 
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
         ws_recv(this, &frame);
+        printf("after ws_recv\n");
 
         message = frame.message;
         parseMessage(user, message);
+
+        printf("after parseMessage\n");
 
         // send message to client
         memset(&frame, 0, sizeof(frame));
@@ -79,6 +96,7 @@ void *initRecvSession(void *param_user) {
         frame.size = strlen(frame.message);
         map(this, broadcast, &frame);
 
+        printf("after mapBroadcast\n");
     }
 
     close(user->socket);

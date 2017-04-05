@@ -29,6 +29,7 @@ struct node_t {
     void *data;
     struct node_t *next;
     struct node_t *prev;
+    pthread_mutex_t lock;
 };
 
 struct thread_shared {

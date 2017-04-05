@@ -23,7 +23,8 @@ void ws_send(Node *this, http_frame *frame);
 void ws_recv(Node *this, http_frame *frame);
 void printname(Node *cursor, void *none);
 void broadcast(Node *cursor, void *frame);
-void removeUser(Node *this);
+void removeNode(Node *this);
+void removeUser(User *user);
 
 #endif
 
