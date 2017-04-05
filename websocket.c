@@ -27,9 +27,11 @@ int open_handshake(int sockfd) {
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    checkError(recv(sockfd, cli_handshake, BUFFERSIZE, 0),
-               "ERROR on receiving handshake message",
-               "Receive handshake message");
+    if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
+        printf("%s\n", "ERROR on receiving handshake message");
+        close(sockfd);
+        pthread_exit(NULL);
+    }
 
     part = strtok(cli_handshake, "\r");
     while (1) {
@@ -61,7 +63,8 @@ int open_handshake(int sockfd) {
 
 }
 
-void ws_send(int sockfd, http_frame *frame) {
+void ws_send(Node *this, http_frame *frame) {
+    User *user = (User*)this->data;
     char buffer[BUFFERSIZE];
 
     // write http frame to buffer
@@ -70,17 +73,21 @@ void ws_send(int sockfd, http_frame *frame) {
     memcpy(buffer+2, frame->message, frame->size);
 
     // send buffer to client
-    checkError(send(sockfd, (void *)&buffer, 2+frame->size, 0),
-               "Error on sending message",
-               "Message sent");
+    if (send(user->socket, (void *)&buffer, 2+frame->size, 0) <= 0) {
+        printf("%s\n", "Error on sending message");
+        removeUser(this);
+    }
+    printf("Message sent to: %d\n", user->socket);
 }
 
-void ws_recv(int sockfd, http_frame *frame) {
+void ws_recv(Node *this, http_frame *frame) {
+    User *user = (User*)this->data;
     int length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
-    checkError(recv(sockfd, buffer, BUFFERSIZE, 0),
-               "Error on recieving message",
-               "Message received");
+    if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
+        printf("%s\n", "Error on recieving message");
+        removeUser(this);
+    }
 
     hasmask = buffer[1] & 0x80 ? 1 : 0;
     length = buffer[1] & 0x7f;
@@ -108,7 +115,6 @@ void ws_recv(int sockfd, http_frame *frame) {
         frame->size = ntohs(len64);
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
-    printf("%llu\n", frame->size);
     frame->message = malloc(frame->size);
     memset(frame->message, '\0', frame->size);
     memcpy(frame->message, buffer + skip, frame->size);
@@ -118,4 +124,25 @@ void ws_recv(int sockfd, http_frame *frame) {
         frame->message[i] = frame->message[i] ^ frame->mask[i % 4];
     }
 
+}
+
+void printname(Node *cursor, void *none) {
+    User *user = (User*)(cursor->data);
+    printf("%s\n", user->name);
+}
+
+void broadcast(Node *cursor, void *frame_void) {
+    User *user = (User*)(cursor->data);
+    http_frame *frame = (http_frame*)frame_void;
+    ws_send(cursor, frame);
+}
+
+void removeUser(Node *this) {
+    User *user = (User*)(this->data);
+    close(user->socket);
+    if (this == head) {
+        head = this->next;
+    }
+    delete(this);
+    pthread_exit(NULL);
 }

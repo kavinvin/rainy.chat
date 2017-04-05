@@ -37,7 +37,7 @@ int initSocket(char *host, char *portno) {
 void checkError(int state, char *errormsg, char *successmsg) {
     if (state < 0) {
         perror(errormsg);
-        exit(1);
+        pthread_exit(NULL);
     }
     printf("-- %s --\n", successmsg);
 }

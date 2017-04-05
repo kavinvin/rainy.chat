@@ -10,7 +10,7 @@
 
 void initClient(int *sockfd);
 void *initRecvSession(void *param);
-int parseMessage(int sockfd, char *message);
+int parseMessage(User *user, char *message);
 void getCommand(char *command);
 
 #endif

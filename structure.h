@@ -25,12 +25,29 @@ struct room_t {
     struct user_t *users;
 };
 
-typedef struct {
+struct node_t {
     void *data;
-    struct Node *next;
-} Node;
+    struct node_t *next;
+    struct node_t *prev;
+};
+
+struct thread_shared {
+    struct user_t *user;
+    struct node_t *users;
+};
 
 typedef struct user_t User;
 typedef struct room_t Room;
+typedef struct node_t Node;
+typedef struct thread_shared ThreadShared;
+
+typedef void (*callback)(Node *data, void *argument);
+Node * create(void *data, Node *next, Node *prev);
+Node * insert(Node *head, void *data);
+void delete(Node *this);
+void map(Node *head, callback function, void *argument);
+
+Node *head;
+Node *tail;
 
 #endif
