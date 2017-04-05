@@ -15,7 +15,6 @@ struct user_t {
     char *name;
     int socket;
     pthread_t thread_id;
-    struct user_t *next;
     // struct room_t *rooms;
 };
 
@@ -29,6 +28,7 @@ struct node_t {
     void *data;
     struct node_t *next;
     struct node_t *prev;
+    pthread_mutex_t lock;
 };
 
 struct thread_shared {

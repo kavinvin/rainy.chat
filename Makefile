@@ -1,10 +1,10 @@
 CC = gcc
-CFLAGS = -std=c11 -pthread
+CFLAGS = -std=c11
 OBJECTS = server.o socket.o websocket.o helper.o base64.o structure.o
 EXEC = server
 
 $(EXEC): $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) -o $(EXEC) -lcrypto
+	$(CC) $(CFLAGS) $(OBJECTS) -o $(EXEC) -lcrypto -ljansson -pthread
 
 server.o: server.c server.h websocket.o
 	$(CC) $(CFLAGS) -c server.c

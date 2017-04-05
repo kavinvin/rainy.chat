@@ -10,22 +10,29 @@ Node * create(void *data, Node *next, Node *prev) {
     Node *new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
         printf("Error creating a new node.\n");
-        pthread_exit(NULL);
+        return NULL;
     }
     new_node->data = data;
     new_node->next = next;
     new_node->prev = prev;
+    pthread_mutex_init(&new_node->lock, NULL);
     return new_node;
 }
 
 Node * insert(Node *head, void *data) {
     if (head == NULL) {
         Node *new_node = create(data, NULL, NULL);
+        if (new_node == NULL) {
+            return NULL;
+        }
         new_node->next = new_node;
         new_node->prev = new_node;
         return new_node;
     }
     Node *new_node = create(data, head, head->prev);
+    if (new_node == NULL) {
+        return NULL;
+    }
     head->prev->next = new_node;
     head->prev = new_node;
     return new_node;

@@ -8,11 +8,10 @@
 char * get_handshake_key(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
     char magic[80], *encoded;
-    char guid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     size_t input_length = 20, output_length;
 
     strcpy(magic, str);
-    strcat(magic, guid);
+    strcat(magic, GUID);
     SHA1((unsigned char*)magic, strlen(magic), hash);
     encoded = base64_encode(hash, input_length, (size_t*)&output_length);
 
@@ -23,10 +22,11 @@ int open_handshake(int sockfd) {
     char cli_handshake[BUFFERSIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
 
-    printf("%d\n", sockfd);
+    printf("Client socket id: %d\n", sockfd);
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
+    showStatus("Handshaking");
     if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
         printf("%s\n", "ERROR on receiving handshake message");
         close(sockfd);
@@ -46,9 +46,10 @@ int open_handshake(int sockfd) {
         printf("%s: %s\n", hkey, hvalue);
     }
 
+    printf("handshake key: %s\n", sec_ws_key);
+
     // sha1, encode64
     sec_ws_accept = slice(get_handshake_key(sec_ws_key), 0, 28);
-    printf("==%s==\n", sec_ws_accept);
 
     // compose server handshake message
     strcpy(serv_handshake, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ");
@@ -57,7 +58,6 @@ int open_handshake(int sockfd) {
 
     // return handshake from the server
     state = send(sockfd, serv_handshake, strlen(serv_handshake), 0);
-    printf("%s\n", serv_handshake);
 
     return 1;
 
@@ -75,7 +75,7 @@ void ws_send(Node *this, http_frame *frame) {
     // send buffer to client
     if (send(user->socket, (void *)&buffer, 2+frame->size, 0) <= 0) {
         printf("%s\n", "Error on sending message");
-        removeUser(this);
+        removeNode(this);
     }
     printf("Message sent to: %d\n", user->socket);
 }
@@ -86,7 +86,7 @@ void ws_recv(Node *this, http_frame *frame) {
     char buffer[BUFFERSIZE], mask[4];
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
         printf("%s\n", "Error on recieving message");
-        removeUser(this);
+        removeNode(this);
     }
 
     hasmask = buffer[1] & 0x80 ? 1 : 0;
@@ -137,12 +137,24 @@ void broadcast(Node *cursor, void *frame_void) {
     ws_send(cursor, frame);
 }
 
-void removeUser(Node *this) {
-    User *user = (User*)(this->data);
-    close(user->socket);
+void removeNode(Node *this) {
+    printf("%s\n", "Removing node..");
     if (this == head) {
-        head = this->next;
+        head = head->next;
+        if (head == head->next) {
+            head = NULL;
+        }
     }
     delete(this);
+    printf("%s\n", "Node removed");
+    removeUser(this->data);
+}
+
+void removeUser(User *user) {
+    printf("%s\n", "Removing user..");
+    close(user->socket);
+    free(user->name);
+    // pthread_detach(user->thread_id);
+    printf("%s\n", "User removed");
     pthread_exit(NULL);
 }

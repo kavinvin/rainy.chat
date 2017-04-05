@@ -4,11 +4,19 @@
 */
 
 #include "server.h"
+#include <jansson.h>
 
 int main(int argc, char *argv[]) {
     int sockfd;
-    sockfd = initSocket(argv[1], argv[2]);
+    char *host = argv[1];
+    char *port = argv[2];
+    char command[20];
+    sockfd = initSocket(host, port);
     initClient(&sockfd);
+    // while (1) {
+    //     fgets(command, 20, stdin);
+    //     serverCommand(command);
+    // }
     pthread_exit(NULL);
 }
 
@@ -17,49 +25,61 @@ void initClient(int *sockfd) {
     struct sockaddr_in cli_addr;
     socklen_t clilen = sizeof(cli_addr);
     pthread_t *thread_id;
+    pthread_attr_t attr;
     User *user;
-    for (int i=0; i<10; i++) {
+
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    while (1) {
 
         // create user: should test if successfully create a user
         user = malloc(sizeof(User));
 
         // accept incoming request, create new client socket
         user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
+        printf("\n------------------------------------------------------------\n");
+        showStatus("Accepting client");
+        if (user->socket < 0) {
+            free(user);
+            perror("ERROR on accepting");
+        }
         thread_id = malloc(sizeof(pthread_t));
-        checkError(user->socket,
-                   "ERROR on accepting",
-                   "Accepted");
 
         state = pthread_create(thread_id, NULL, initRecvSession, (void *)user);
+        showStatus("Creating new thread");
         if (state){
             printf("ERROR; return code from pthread_create() is %d\n", state);
-            exit(-1);
+            close(user->socket);
+            free(thread_id);
+            free(user);
         }
 
     }
 
-    // close socket
-    // printf("sockfd closed\n");
-    // close(*sockfd);
 }
 
-void *initRecvSession(void *param_user) {
-    User *user = (User*)param_user;
+void *initRecvSession(void *user_param) {
+    User *user = (User*)user_param;
     char *message;
     http_frame frame;
 
     // assign temporary username
     user->name = calloc(20, sizeof(char));
-    strcpy(user->name, "kavinvin");
+    user->thread_id = pthread_self();
+    strcpy(user->name, "anonymous");
 
-
-    checkError(open_handshake(user->socket),
-               "handshaking failed",
-               "handshaking succeed");
+    if (open_handshake(user->socket) < 0) {
+        perror("handshaking failed");
+        removeUser(user);
+    }
 
     // prepend user to the linked list
-    head = insert(head, user);
-    Node *this = head;
+    Node *this = insert(head, user);
+    if (this == NULL) {
+        removeUser(user);
+    }
+    head = this;
 
     while (1) {
         // receive message from client
@@ -67,7 +87,7 @@ void *initRecvSession(void *param_user) {
         ws_recv(this, &frame);
 
         message = frame.message;
-        parseMessage(user, message);
+        parseMessage(this, message);
 
         // send message to client
         memset(&frame, 0, sizeof(frame));
@@ -75,7 +95,6 @@ void *initRecvSession(void *param_user) {
         frame.message = message;
         frame.size = strlen(frame.message);
         map(this, broadcast, &frame);
-
     }
 
     close(user->socket);
@@ -83,23 +102,34 @@ void *initRecvSession(void *param_user) {
     pthread_exit(NULL);
 }
 
-int parseMessage(User *user, char *message) {
+int parseMessage(Node *this, char *message) {
+    User *user = (User*)this->data;
     if (*message == '/') {
         // command mode
-        getCommand(message);
-        return 1;
+        clientCommand(this, message);
+        return 0;
     } else {
         // message mode
         printf("Here is the message from no.%d: %s\n", user->socket, message);
-        return 0;
+        return 1;
     }
 }
 
-void getCommand(char *command) {
+void clientCommand(Node *this, char *command) {
     if (strcmp(command, "/exit") == 0) {
         printf("Exited\n");
+        removeNode(this);
+    } else {
+        printf("Client command not found\n");
+    }
+}
+
+void serverCommand(char *command) {
+    printf("got command\n");
+    if (strcmp(command, "/exit\n") == 0) {
+        printf("Shutting down...\n");
         pthread_exit(NULL);
     } else {
-        printf("Command not found\n");
+        printf("Server command not found\n");
     }
 }
