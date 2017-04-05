@@ -4,10 +4,13 @@
 */
 
 #include "server.h"
+#include <jansson.h>
 
 int main(int argc, char *argv[]) {
     int sockfd;
-    sockfd = initSocket(argv[1], argv[2]);
+    char *host = argv[1];
+    char *port = argv[2];
+    sockfd = initSocket(host, port);
     initClient(&sockfd);
     pthread_exit(NULL);
 }
@@ -50,7 +53,7 @@ void *initRecvSession(void *param_user) {
 
     // assign temporary username
     user->name = calloc(20, sizeof(char));
-    strcpy(user->name, "kavinvin");
+    strcpy(user->name, "anonymous");
 
 
     checkError(open_handshake(user->socket),

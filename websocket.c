@@ -140,8 +140,9 @@ void broadcast(Node *cursor, void *frame_void) {
 void removeUser(Node *this) {
     User *user = (User*)(this->data);
     close(user->socket);
+    free(user->name);
     if (this == head) {
-        head = this->next;
+        head = head->next;
     }
     delete(this);
     pthread_exit(NULL);
