@@ -98,6 +98,8 @@ void *initRecvSession(void *user_param) {
         frame.message = message;
         frame.size = strlen(frame.message);
         map(this, broadcast, &frame); // mutex
+
+        free(frame.message);
     }
 
     removeNode(this);
@@ -118,7 +120,7 @@ int parseMessage(Node *this, char *message) {
     User *user = (User*)this->data;
     if (*message == '/') {
         // command mode
-        clientCommand(this, message);
+        clientRequest(this, message);
         return 0;
     } else {
         // message mode
@@ -127,7 +129,7 @@ int parseMessage(Node *this, char *message) {
     }
 }
 
-void clientCommand(Node *this, char *command) {
+void clientRequest(Node *this, char *command) {
     if (strcmp(command, "/exit") == 0) {
         printf("Exited\n");
         removeNode(this);
