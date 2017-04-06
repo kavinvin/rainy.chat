@@ -19,7 +19,7 @@ char * get_handshake_key(char *str) {
 }
 
 int open_handshake(int sockfd) {
-    char cli_handshake[BUFFERSIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
+    char cli_handshake[BUFFERSIZE], serv_handshake[300], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
 
     printf("Client socket id: %d\n", sockfd);
@@ -49,7 +49,7 @@ int open_handshake(int sockfd) {
     printf("handshake key: %s\n", sec_ws_key);
 
     // sha1, encode64
-    sec_ws_accept = slice(get_handshake_key(sec_ws_key), 0, 28);
+    sec_ws_accept = slice(get_handshake_key(sec_ws_key), 28);
 
     // compose server handshake message
     strcpy(serv_handshake, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ");
@@ -58,6 +58,8 @@ int open_handshake(int sockfd) {
 
     // return handshake from the server
     state = send(sockfd, serv_handshake, strlen(serv_handshake), 0);
+
+    free(sec_ws_accept);
 
     return 1;
 
@@ -117,7 +119,7 @@ void ws_recv(Node *this, http_frame *frame) {
         frame->size = ntohs(len64);
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
-    frame->message = malloc(frame->size);
+    frame->message = malloc(frame->size); // warning: memory leakage
     memset(frame->message, '\0', frame->size);
     memcpy(frame->message, buffer + skip, frame->size);
 
