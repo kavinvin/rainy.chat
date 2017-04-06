@@ -76,6 +76,7 @@ void ws_send(Node *this, http_frame *frame) {
     if (send(user->socket, (void *)&buffer, 2+frame->size, 0) <= 0) {
         printf("%s\n", "Error on sending message");
         removeNode(this);
+        pthread_exit(NULL);
     }
     printf("Message sent to: %d\n", user->socket);
 }
@@ -87,6 +88,7 @@ void ws_recv(Node *this, http_frame *frame) {
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
         printf("%s\n", "Error on recieving message");
         removeNode(this);
+        pthread_exit(NULL);
     }
 
     hasmask = buffer[1] & 0x80 ? 1 : 0;
@@ -145,16 +147,15 @@ void removeNode(Node *this) {
             head = NULL;
         }
     }
+    removeUser(this->data);
     delete(this);
     printf("%s\n", "Node removed");
-    removeUser(this->data);
 }
 
 void removeUser(User *user) {
     printf("%s\n", "Removing user..");
     close(user->socket);
     free(user->name);
-    // pthread_detach(user->thread_id);
+    free(user);
     printf("%s\n", "User removed");
-    pthread_exit(NULL);
 }
