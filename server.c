@@ -11,8 +11,9 @@ int main(int argc, char *argv[]) {
     char *port = argv[2];
     pthread_t server_thread;
     sockfd = initSocket(host, port);
-    pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
+    // pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
     initClient(&sockfd);
+    close(sockfd);
     pthread_exit(NULL);
 }
 
@@ -46,13 +47,15 @@ void initClient(int *sockfd) {
         state = pthread_create(thread_id, NULL, initRecvSession, (void*)user);
         showStatus("Creating new thread");
         if (state){
-            printf("ERROR; return code from pthread_create() is %d\n", state);
+            printf("ERROR: return code from pthread_create() is %d\n", state);
             close(user->socket);
             free(thread_id);
             free(user);
         }
 
     }
+
+    pthread_attr_destroy(&attr);
 
 }
 
@@ -73,6 +76,7 @@ void *initRecvSession(void *user_param) {
     }
 
     // prepend user to the linked list
+    // mutex
     Node *this = insert(head, user);
     if (this == NULL) {
         removeUser(user);
@@ -83,21 +87,20 @@ void *initRecvSession(void *user_param) {
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
-        ws_recv(this, &frame);
+        ws_recv(this, &frame); // mutex
 
         message = frame.message;
-        parseMessage(this, message);
+        parseMessage(this, message); // mutex
 
         // send message to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
         frame.message = message;
         frame.size = strlen(frame.message);
-        map(this, broadcast, &frame);
+        map(this, broadcast, &frame); // mutex
     }
 
-    close(user->socket);
-    printf("newsockfd no.%d closed\n", user->socket);
+    removeNode(this);
     pthread_exit(NULL);
 }
 
