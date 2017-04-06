@@ -147,9 +147,9 @@ void removeNode(Node *this) {
             head = NULL;
         }
     }
+    removeUser(this->data);
     delete(this);
     printf("%s\n", "Node removed");
-    removeUser((User*)this->data);
 }
 
 void removeUser(User *user) {

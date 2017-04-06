@@ -39,10 +39,11 @@ void initClient(int *sockfd) {
         if (user->socket < 0) {
             free(user);
             perror("ERROR on accepting");
+            continue;
         }
         thread_id = malloc(sizeof(pthread_t));
 
-        state = pthread_create(thread_id, NULL, initRecvSession, (void *)user);
+        state = pthread_create(thread_id, NULL, initRecvSession, (void*)user);
         showStatus("Creating new thread");
         if (state){
             printf("ERROR; return code from pthread_create() is %d\n", state);
