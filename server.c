@@ -4,21 +4,21 @@
 */
 
 #include "server.h"
-#include <jansson.h>
 
-int main(int argc, char *argv[]) {
-    int sockfd;
-    char *host = argv[1];
-    char *port = argv[2];
-    char command[20];
-    sockfd = initSocket(host, port);
-    initClient(&sockfd);
-    // while (1) {
-    //     fgets(command, 20, stdin);
-    //     serverCommand(command);
-    // }
-    pthread_exit(NULL);
+int main() {
+
 }
+
+// int main(int argc, char *argv[]) {
+//     int sockfd;
+//     char *host = argv[1];
+//     char *port = argv[2];
+//     pthread_t server_thread;
+//     sockfd = initSocket(host, port);
+//     pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
+//     initClient(&sockfd);
+//     pthread_exit(NULL);
+// }
 
 void initClient(int *sockfd) {
     int state;
@@ -72,12 +72,14 @@ void *initRecvSession(void *user_param) {
     if (open_handshake(user->socket) < 0) {
         perror("handshaking failed");
         removeUser(user);
+        pthread_exit(NULL);
     }
 
     // prepend user to the linked list
     Node *this = insert(head, user);
     if (this == NULL) {
         removeUser(user);
+        pthread_exit(NULL);
     }
     head = this;
 
@@ -102,6 +104,16 @@ void *initRecvSession(void *user_param) {
     pthread_exit(NULL);
 }
 
+void *initServerSession(void *sockfd_param) {
+    int *sockfd = (int*)sockfd_param;
+    char command[20];
+    while (1) {
+        fgets(command, 20, stdin);
+        serverCommand(sockfd, command);
+    }
+    pthread_exit(NULL);
+}
+
 int parseMessage(Node *this, char *message) {
     User *user = (User*)this->data;
     if (*message == '/') {
@@ -119,16 +131,22 @@ void clientCommand(Node *this, char *command) {
     if (strcmp(command, "/exit") == 0) {
         printf("Exited\n");
         removeNode(this);
+        pthread_exit(NULL);
     } else {
         printf("Client command not found\n");
     }
 }
 
-void serverCommand(char *command) {
+void serverCommand(int *sockfd, char *command) {
     printf("got command\n");
     if (strcmp(command, "/exit\n") == 0) {
         printf("Shutting down...\n");
-        pthread_exit(NULL);
+        // while (head != NULL) {
+        //     removeNode(head->prev);
+        // }
+        close(*sockfd);
+        printf("Socket Closed\n");
+        exit(0);
     } else {
         printf("Server command not found\n");
     }

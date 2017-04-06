@@ -20,6 +20,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <jansson.h>
 
 #define BUFFERSIZE 1024
 #define NUM_THREADS 8
