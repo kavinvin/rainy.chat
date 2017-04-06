@@ -5,20 +5,16 @@
 
 #include "server.h"
 
-int main() {
-
+int main(int argc, char *argv[]) {
+    int sockfd;
+    char *host = argv[1];
+    char *port = argv[2];
+    pthread_t server_thread;
+    sockfd = initSocket(host, port);
+    pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
+    initClient(&sockfd);
+    pthread_exit(NULL);
 }
-
-// int main(int argc, char *argv[]) {
-//     int sockfd;
-//     char *host = argv[1];
-//     char *port = argv[2];
-//     pthread_t server_thread;
-//     sockfd = initSocket(host, port);
-//     pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
-//     initClient(&sockfd);
-//     pthread_exit(NULL);
-// }
 
 void initClient(int *sockfd) {
     int state;

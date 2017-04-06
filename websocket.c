@@ -149,12 +149,13 @@ void removeNode(Node *this) {
     }
     delete(this);
     printf("%s\n", "Node removed");
-    removeUser(this->data);
+    removeUser((User*)this->data);
 }
 
 void removeUser(User *user) {
     printf("%s\n", "Removing user..");
     close(user->socket);
     free(user->name);
+    free(user);
     printf("%s\n", "User removed");
 }
