@@ -19,10 +19,8 @@ char * get_handshake_key(char *str) {
 }
 
 int open_handshake(int sockfd) {
-    char cli_handshake[BUFFERSIZE], serv_handshake[200], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
+    char cli_handshake[BUFFERSIZE], serv_handshake[300], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
-
-    printf("Client socket id: %d\n", sockfd);
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
@@ -42,14 +40,16 @@ int open_handshake(int sockfd) {
         hvalue = strtok(NULL, "\r");
         if (strcmp(hkey, "Sec-WebSocket-Key:") == 0) {
             sec_ws_key = hvalue;
+            printf("Sec-WebSocket-Key: %s\n", sec_ws_key);
         }
-        printf("%s: %s\n", hkey, hvalue);
+        if (strcmp(hkey, "User-Agent:") == 0) {
+            printf("User-Agent: %s\n", hvalue);
+        }
+        // printf("%s %s\n", hkey, hvalue);
     }
 
-    printf("handshake key: %s\n", sec_ws_key);
-
     // sha1, encode64
-    sec_ws_accept = slice(get_handshake_key(sec_ws_key), 0, 28);
+    sec_ws_accept = slice(get_handshake_key(sec_ws_key), 28);
 
     // compose server handshake message
     strcpy(serv_handshake, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ");
@@ -59,21 +59,43 @@ int open_handshake(int sockfd) {
     // return handshake from the server
     state = send(sockfd, serv_handshake, strlen(serv_handshake), 0);
 
+    free(sec_ws_accept);
+
     return 1;
 
 }
 
 void ws_send(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
+    int skip;
     char buffer[BUFFERSIZE];
+
+    memset(buffer, 0, sizeof(buffer));
+    printf("%llu\n", frame->size);
+
+    if (frame->size <= 125) {
+        skip = 2;
+        buffer[1] = frame->size;
+    } else if (frame->size <= 65535) {
+        uint16_t len16;
+        skip = 4;
+        buffer[1] = 126;
+        len16 = htons(frame->size);
+        memcpy(buffer+2, &len16, sizeof(uint16_t));
+    } else {
+        uint64_t len64;
+        skip = 10;
+        buffer[1] = 127;
+        len64 = htonl(frame->size);
+        memcpy(buffer+2, &len64, sizeof(uint64_t));
+    }
 
     // write http frame to buffer
     buffer[0] = frame->opcode;
-    buffer[1] = frame->size;
-    memcpy(buffer+2, frame->message, frame->size);
+    memcpy(buffer+skip, frame->message, frame->size);
 
     // send buffer to client
-    if (send(user->socket, (void *)&buffer, 2+frame->size, 0) <= 0) {
+    if (send(user->socket, (void *)&buffer, frame->size + skip, 0) <= 0) {
         printf("%s\n", "Error on sending message");
         removeNode(this);
         pthread_exit(NULL);
@@ -93,7 +115,7 @@ void ws_recv(Node *this, http_frame *frame) {
 
     hasmask = buffer[1] & 0x80 ? 1 : 0;
     length = buffer[1] & 0x7f;
-    if (length < 126) {
+    if (length <= 125) {
         // get mask
         skip = 6; // 2 + 0 + 4
         frame->size = length;
@@ -114,11 +136,11 @@ void ws_recv(Node *this, http_frame *frame) {
         memcpy(&len64, buffer + 2, sizeof(uint64_t));
         // get mask
         skip = 14; // 2 + 8 + 4
-        frame->size = ntohs(len64);
+        frame->size = ntohl(len64);
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
-    frame->message = malloc(frame->size);
-    memset(frame->message, '\0', frame->size);
+    frame->message = malloc(frame->size+1); // warning: memory leakage
+    memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
 
     // remove mask from data

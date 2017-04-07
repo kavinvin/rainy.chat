@@ -11,8 +11,12 @@ int main(int argc, char *argv[]) {
     char *port = argv[2];
     pthread_t server_thread;
     sockfd = initSocket(host, port);
-    pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
+    if (sockfd < 0) {
+        exit(1);
+    }
+    // pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
     initClient(&sockfd);
+    close(sockfd);
     pthread_exit(NULL);
 }
 
@@ -41,18 +45,23 @@ void initClient(int *sockfd) {
             perror("ERROR on accepting");
             continue;
         }
+
+        printf("Client socket id: %d\n", user->socket);
+
         thread_id = malloc(sizeof(pthread_t));
 
         state = pthread_create(thread_id, NULL, initRecvSession, (void*)user);
         showStatus("Creating new thread");
         if (state){
-            printf("ERROR; return code from pthread_create() is %d\n", state);
+            printf("ERROR: return code from pthread_create() is %d\n", state);
             close(user->socket);
             free(thread_id);
             free(user);
         }
 
     }
+
+    pthread_attr_destroy(&attr);
 
 }
 
@@ -61,9 +70,11 @@ void *initRecvSession(void *user_param) {
     char *message;
     http_frame frame;
 
+    // login functions here
+
     // assign temporary username
-    user->name = calloc(20, sizeof(char));
     user->thread_id = pthread_self();
+    user->name = calloc(20, sizeof(char));
     strcpy(user->name, "anonymous");
 
     if (open_handshake(user->socket) < 0) {
@@ -73,6 +84,7 @@ void *initRecvSession(void *user_param) {
     }
 
     // prepend user to the linked list
+    // mutex
     Node *this = insert(head, user);
     if (this == NULL) {
         removeUser(user);
@@ -83,21 +95,27 @@ void *initRecvSession(void *user_param) {
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
-        ws_recv(this, &frame);
+        ws_recv(this, &frame); // mutex
 
         message = frame.message;
-        parseMessage(this, message);
+        parseMessage(this, message); // mutex
 
         // send message to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
         frame.message = message;
         frame.size = strlen(frame.message);
-        map(this, broadcast, &frame);
+        // protect from receiving message more than 1200 characters
+        if (frame.size > 1200) {
+            removeNode(this);
+            pthread_exit(NULL);
+        }
+        map(this, broadcast, &frame); // mutex
+
+        free(frame.message);
     }
 
-    close(user->socket);
-    printf("newsockfd no.%d closed\n", user->socket);
+    removeNode(this);
     pthread_exit(NULL);
 }
 
@@ -115,7 +133,7 @@ int parseMessage(Node *this, char *message) {
     User *user = (User*)this->data;
     if (*message == '/') {
         // command mode
-        clientCommand(this, message);
+        clientRequest(this, message);
         return 0;
     } else {
         // message mode
@@ -124,7 +142,7 @@ int parseMessage(Node *this, char *message) {
     }
 }
 
-void clientCommand(Node *this, char *command) {
+void clientRequest(Node *this, char *command) {
     if (strcmp(command, "/exit") == 0) {
         printf("Exited\n");
         removeNode(this);

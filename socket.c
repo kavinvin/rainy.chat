@@ -14,7 +14,7 @@ int initSocket(char *host, char *portno) {
     showStatus("Creating socket");
     if (sockfd < 0) {
         perror("ERROR opening socket");
-        exit(1);
+        return -1;
     }
 
     // create server address structure
@@ -27,14 +27,14 @@ int initSocket(char *host, char *portno) {
     showStatus("Binding");
     if (bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
         perror("ERROR on binding");
-        exit(1);
+        return -1;
     }
 
     // listening to the socket
     showStatus("Listening");
     if (listen(sockfd, 5)) {
         perror("ERROR on listening");
-        exit(1);
+        return -1;
     }
 
     return sockfd;
