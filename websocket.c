@@ -73,11 +73,6 @@ void ws_send(Node *this, http_frame *frame) {
     memset(buffer, 0, sizeof(buffer));
     printf("%llu\n", frame->size);
 
-    if (frame->size > 1025) {
-        removeNode(this);
-        pthread_exit(NULL);
-    }
-
     if (frame->size <= 125) {
         skip = 2;
         buffer[1] = frame->size;

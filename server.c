@@ -46,7 +46,7 @@ void initClient(int *sockfd) {
             continue;
         }
 
-        printf("Client socket id: %d\n", *sockfd);
+        printf("Client socket id: %d\n", user->socket);
 
         thread_id = malloc(sizeof(pthread_t));
 
@@ -105,6 +105,11 @@ void *initRecvSession(void *user_param) {
         frame.opcode = 129;
         frame.message = message;
         frame.size = strlen(frame.message);
+        // protect from receiving message more than 1200 characters
+        if (frame.size > 1200) {
+            removeNode(this);
+            pthread_exit(NULL);
+        }
         map(this, broadcast, &frame); // mutex
 
         free(frame.message);
