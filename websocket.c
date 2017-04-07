@@ -96,7 +96,7 @@ void ws_send(Node *this, http_frame *frame) {
     printBits(150, &buffer);
 
     // send buffer to client
-    if (send(user->socket, (void *)&buffer, frame->size+skip, 0) <= 0) {
+    if (send(user->socket, (void *)&buffer, frame->size + skip, 0) <= 0) {
         printf("%s\n", "Error on sending message");
         removeNode(this);
         pthread_exit(NULL);
@@ -140,8 +140,8 @@ void ws_recv(Node *this, http_frame *frame) {
         frame->size = ntohl(len64);
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
-    frame->message = malloc(frame->size); // warning: memory leakage
-    memset(frame->message, '\0', frame->size);
+    frame->message = malloc(frame->size+1); // warning: memory leakage
+    memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
 
     // remove mask from data
