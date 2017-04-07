@@ -67,12 +67,33 @@ int open_handshake(int sockfd) {
 
 void ws_send(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
+    int skip;
     char buffer[BUFFERSIZE];
+
+    memset(buffer, 0, sizeof(buffer));
+    printf("%llu\n", frame->size);
+
+    if (frame->size <= 125) {
+        skip = 2;
+        buffer[1] = frame->size;
+    } else if (frame->size <= 65535) {
+        uint16_t len16;
+        skip = 4;
+        buffer[1] = 126;
+        len16 = htons(frame->size);
+        memcpy(buffer+2, &len16, sizeof(uint16_t));
+    } else {
+        uint64_t len64;
+        skip = 10;
+        buffer[1] = 127;
+        len64 = htonl(frame->size);
+        memcpy(buffer+2, &len64, sizeof(uint64_t));
+    }
 
     // write http frame to buffer
     buffer[0] = frame->opcode;
-    buffer[1] = frame->size;
-    memcpy(buffer+2, frame->message, frame->size);
+    memcpy(buffer+skip, frame->message, frame->size);
+    printBits(150, &buffer);
 
     // send buffer to client
     if (send(user->socket, (void *)&buffer, 2+frame->size, 0) <= 0) {
@@ -95,7 +116,7 @@ void ws_recv(Node *this, http_frame *frame) {
 
     hasmask = buffer[1] & 0x80 ? 1 : 0;
     length = buffer[1] & 0x7f;
-    if (length < 126) {
+    if (length <= 125) {
         // get mask
         skip = 6; // 2 + 0 + 4
         frame->size = length;
@@ -116,7 +137,7 @@ void ws_recv(Node *this, http_frame *frame) {
         memcpy(&len64, buffer + 2, sizeof(uint64_t));
         // get mask
         skip = 14; // 2 + 8 + 4
-        frame->size = ntohs(len64);
+        frame->size = ntohl(len64);
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
     frame->message = malloc(frame->size); // warning: memory leakage

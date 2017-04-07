@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     // pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
-    initClient(&sockfd) < 0;
+    initClient(&sockfd);
     close(sockfd);
     pthread_exit(NULL);
 }
