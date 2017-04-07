@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <jansson.h>
 
-#define BUFFERSIZE 1024
+#define BUFFERSIZE 4096
 #define NUM_THREADS 8
 #define GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
