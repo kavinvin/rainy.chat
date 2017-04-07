@@ -45,6 +45,9 @@ void initClient(int *sockfd) {
             perror("ERROR on accepting");
             continue;
         }
+
+        printf("Client socket id: %d\n", *sockfd);
+
         thread_id = malloc(sizeof(pthread_t));
 
         state = pthread_create(thread_id, NULL, initRecvSession, (void*)user);
