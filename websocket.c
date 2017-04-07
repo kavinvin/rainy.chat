@@ -68,8 +68,9 @@ int open_handshake(int sockfd) {
 void ws_send(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int skip;
-    char *buffer = (char*)calloc(frame->size + 32, sizeof(char));
+    char buffer[BUFFERSIZE];
 
+    memset(buffer, 0, sizeof(buffer));
     printf("%llu\n", frame->size);
 
     if (frame->size <= 125) {
@@ -95,13 +96,12 @@ void ws_send(Node *this, http_frame *frame) {
     printBits(150, &buffer);
 
     // send buffer to client
-    if (send(user->socket, (void *)buffer, frame->size + skip, 0) <= 0) {
+    if (send(user->socket, (void *)&buffer, frame->size + skip, 0) <= 0) {
         printf("%s\n", "Error on sending message");
         removeNode(this);
         pthread_exit(NULL);
     }
     printf("Message sent to: %d\n", user->socket);
-    free(buffer);
 }
 
 void ws_recv(Node *this, http_frame *frame) {
