@@ -11,8 +11,11 @@ int main(int argc, char *argv[]) {
     char *port = argv[2];
     pthread_t server_thread;
     sockfd = initSocket(host, port);
+    if (sockfd < 0) {
+        exit(1);
+    }
     // pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
-    initClient(&sockfd);
+    initClient(&sockfd) < 0;
     close(sockfd);
     pthread_exit(NULL);
 }
@@ -64,9 +67,11 @@ void *initRecvSession(void *user_param) {
     char *message;
     http_frame frame;
 
+    // login functions here
+
     // assign temporary username
-    user->name = calloc(20, sizeof(char));
     user->thread_id = pthread_self();
+    user->name = calloc(20, sizeof(char));
     strcpy(user->name, "anonymous");
 
     if (open_handshake(user->socket) < 0) {
