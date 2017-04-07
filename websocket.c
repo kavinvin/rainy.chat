@@ -96,7 +96,7 @@ void ws_send(Node *this, http_frame *frame) {
     printBits(150, &buffer);
 
     // send buffer to client
-    if (send(user->socket, (void *)&buffer, 2+frame->size, 0) <= 0) {
+    if (send(user->socket, (void *)&buffer, frame->size+skip, 0) <= 0) {
         printf("%s\n", "Error on sending message");
         removeNode(this);
         pthread_exit(NULL);
