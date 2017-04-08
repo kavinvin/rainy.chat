@@ -104,7 +104,8 @@ void *initRecvSession(void *user_param) {
     free(json);
 
     // insert node
-    head = insert(head, this);
+    insert(head, this);
+    if (head == NULL) head = this;
     pthread_mutex_lock(&mutex_node_count);
     node_count++;
     pthread_mutex_unlock(&mutex_node_count);

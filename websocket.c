@@ -28,7 +28,7 @@ int open_handshake(int sockfd) {
     if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
         printf("%s\n", "ERROR on receiving handshake message");
         close(sockfd);
-        pthread_exit(NULL);
+        return -1;
     }
 
     part = strtok(cli_handshake, "\r");
@@ -61,7 +61,7 @@ int open_handshake(int sockfd) {
 
     free(sec_ws_accept);
 
-    return 1;
+    return 0;
 
 }
 
