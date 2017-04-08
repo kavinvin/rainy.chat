@@ -21,8 +21,6 @@ Node * insert(Node *next, Node *new_node) {
     if (node_count == 0) {
         new_node->next = new_node;
         new_node->prev = new_node;
-        node_count = 1;
-        printf("%d\n", node_count);
         return new_node;
     }
     Node *prev = next->prev;
