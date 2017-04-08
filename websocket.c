@@ -71,7 +71,6 @@ void ws_send(Node *this, http_frame *frame) {
     char buffer[MSG_BUFFER];
 
     memset(buffer, 0, sizeof(buffer));
-    printf("%llu\n", frame->size);
 
     if (frame->size <= 125) {
         skip = 2;
@@ -163,12 +162,14 @@ void broadcast(Node *cursor, void *frame_void) {
 
 void removeNode(Node *this) {
     printf("%s\n", "Removing node..");
+    pthread_mutex_lock(&mutex_head);
     if (this == head) {
         head = head->next;
         if (head == head->next) {
             head = NULL;
         }
     }
+    pthread_mutex_unlock(&mutex_head);
     removeUser(this->data);
     delete(this);
     printf("%s\n", "Node removed");
@@ -177,7 +178,7 @@ void removeNode(Node *this) {
 void removeUser(User *user) {
     printf("%s\n", "Removing user..");
     close(user->socket);
-    free(user->name);
+    // free((char*)user->name);
     free(user);
     printf("%s\n", "User removed");
 }

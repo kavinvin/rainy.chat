@@ -10,6 +10,11 @@ int main(int argc, char *argv[]) {
     char *host = argv[1];
     char *port = argv[2];
     pthread_t server_thread;
+    node_count = 0;
+
+    // init mutex
+    pthread_mutex_init(&mutex_head, NULL);
+
     sockfd = initSocket(host, port);
     if (sockfd < 0) {
         exit(1);
@@ -72,7 +77,6 @@ void *initRecvSession(void *user_param) {
     http_frame frame;
     json_t* json;
     json_error_t error;
-    char *username;
     char *roomname;
 
     // assign temporary username
@@ -85,29 +89,25 @@ void *initRecvSession(void *user_param) {
     }
 
     // create node
-    if (head == NULL) {
-        this = create(user, NULL, NULL);
-    } else {
-        this = create(user, head, head->prev);
-    }
+    this = create(user);
     if (this == NULL) {
+        printf("%s\n", "Error on creating node");
         removeUser(user);
         pthread_exit(NULL);
     }
+
     // prerequisite: username and roomname
     memset(&frame, 0, sizeof(frame));
     ws_recv(this, &frame); // mutex
     json = json_loads(frame.message, 0, &error);
-    json_unpack(json, "{s:s, s:s}", "username", &username, "roomname", &roomname);
-    user->name = username;
-    printf("%s\n", error.text);
-    printf("%s\n", username);
+    json_unpack(json, "{s:s, s:s}", "username", &user->name, "roomname", &roomname);
     free(json);
 
-    // prepend user to the linked list
-    // mutex
+    // insert node
+    pthread_mutex_lock(&mutex_head);
     insert(head, this);
     head = this;
+    pthread_mutex_unlock(&mutex_head);
 
     while (1) {
         // receive message from client

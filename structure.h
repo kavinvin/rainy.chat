@@ -12,7 +12,7 @@
 struct room_t;
 
 struct user_t {
-    char *name;
+    const char *name;
     int socket;
     pthread_t thread_id;
     // struct room_t *rooms;
@@ -42,11 +42,13 @@ typedef struct node_t Node;
 typedef struct thread_shared ThreadShared;
 
 typedef void (*callback)(Node *data, void *argument);
-Node * create(void *data, Node *next, Node *prev);
+Node * create(void *data);
 Node * insert(Node *head, Node *new_node);
 void delete(Node *this);
 void map(Node *head, callback function, void *argument);
 
 Node *head;
+int node_count;
+pthread_mutex_t mutex_head;
 
 #endif
