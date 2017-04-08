@@ -12,7 +12,7 @@
 struct room_t;
 
 struct user_t {
-    const char *name;
+    char *name;
     int socket;
     pthread_t thread_id;
     // struct room_t *rooms;

@@ -174,7 +174,7 @@ void removeNode(Node *this) {
 void removeUser(User *user) {
     printf("%s\n", "Removing user..");
     close(user->socket);
-    // free((char*)user->name);
+    if (user->name != NULL) free(user->name);
     free(user);
     printf("%s\n", "User removed");
 }
