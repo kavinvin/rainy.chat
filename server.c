@@ -67,15 +67,16 @@ void initClient(int *sockfd) {
 
 void *initRecvSession(void *user_param) {
     User *user = (User*)user_param;
+    Node *this;
     char *message;
     http_frame frame;
-
-    // login functions here
+    json_t* json;
+    json_error_t error;
+    char *username;
+    char *roomname;
 
     // assign temporary username
     user->thread_id = pthread_self();
-    user->name = calloc(20, sizeof(char));
-    strcpy(user->name, "anonymous");
 
     if (open_handshake(user->socket) < 0) {
         perror("handshaking failed");
@@ -83,24 +84,44 @@ void *initRecvSession(void *user_param) {
         pthread_exit(NULL);
     }
 
-    // prepend user to the linked list
-    // mutex
-    Node *this = insert(head, user);
+    // create node
+    if (head == NULL) {
+        this = create(user, NULL, NULL);
+    } else {
+        this = create(user, head, head->prev);
+    }
     if (this == NULL) {
         removeUser(user);
         pthread_exit(NULL);
     }
+    // prerequisite: username and roomname
+    memset(&frame, 0, sizeof(frame));
+    ws_recv(this, &frame); // mutex
+    json = json_loads(frame.message, 0, &error);
+    json_unpack(json, "{s:s, s:s}", "username", &username, "roomname", &roomname);
+    user->name = username;
+    printf("%s\n", error.text);
+    printf("%s\n", username);
+    free(json);
+
+    // prepend user to the linked list
+    // mutex
+    insert(head, this);
     head = this;
 
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
         ws_recv(this, &frame); // mutex
+        parseMessage(this, frame.message); // mutex
 
-        message = frame.message;
-        parseMessage(this, message); // mutex
+        // build json
+        json = json_pack("{s:s, s:s}", "username", user->name, "message", frame.message);
+        message = json_dumps(json, JSON_COMPACT);
+        free(json);
+        free(frame.message);
 
-        // send message to client
+        // send json to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
         frame.message = message;
@@ -111,7 +132,6 @@ void *initRecvSession(void *user_param) {
             pthread_exit(NULL);
         }
         map(this, broadcast, &frame); // mutex
-
         free(frame.message);
     }
 

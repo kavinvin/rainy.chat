@@ -19,19 +19,11 @@ Node * create(void *data, Node *next, Node *prev) {
     return new_node;
 }
 
-Node * insert(Node *head, void *data) {
+Node * insert(Node *head, Node *new_node) {
     if (head == NULL) {
-        Node *new_node = create(data, NULL, NULL);
-        if (new_node == NULL) {
-            return NULL;
-        }
         new_node->next = new_node;
         new_node->prev = new_node;
         return new_node;
-    }
-    Node *new_node = create(data, head, head->prev);
-    if (new_node == NULL) {
-        return NULL;
     }
     head->prev->next = new_node;
     head->prev = new_node;

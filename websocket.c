@@ -68,7 +68,7 @@ int open_handshake(int sockfd) {
 void ws_send(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int skip;
-    char buffer[BUFFERSIZE];
+    char buffer[MSG_BUFFER];
 
     memset(buffer, 0, sizeof(buffer));
     printf("%llu\n", frame->size);

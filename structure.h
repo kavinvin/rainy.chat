@@ -43,11 +43,10 @@ typedef struct thread_shared ThreadShared;
 
 typedef void (*callback)(Node *data, void *argument);
 Node * create(void *data, Node *next, Node *prev);
-Node * insert(Node *head, void *data);
+Node * insert(Node *head, Node *new_node);
 void delete(Node *this);
 void map(Node *head, callback function, void *argument);
 
 Node *head;
-Node *tail;
 
 #endif
