@@ -81,6 +81,7 @@ void *initRecvSession(void *user_param) {
 
     // assign temporary username
     user->thread_id = pthread_self();
+    user->name = NULL;
 
     if (open_handshake(user->socket) < 0) {
         perror("handshaking failed");

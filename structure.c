@@ -13,6 +13,8 @@ Node * create(void *data) {
         return NULL;
     }
     new_node->data = data;
+    new_node->next = NULL;
+    new_node->prev = NULL;
     pthread_mutex_init(&new_node->lock, NULL);
     return new_node;
 }
@@ -24,6 +26,9 @@ Node * insert(Node *next, Node *new_node) {
         return new_node;
     }
     Node *prev = next->prev;
+    if (prev == NULL || next == NULL) {
+        return NULL;
+    }
     printf("locking\n");
     if (node_count > 1) pthread_mutex_lock(&prev->lock);
     pthread_mutex_lock(&next->lock);
