@@ -104,10 +104,10 @@ void *initRecvSession(void *user_param) {
     free(json);
 
     // insert node
-    // pthread_mutex_lock(&mutex_head);
     head = insert(head, this);
-    // head = this;
-    // pthread_mutex_unlock(&mutex_head);
+    pthread_mutex_lock(&mutex_node_count);
+    node_count++;
+    pthread_mutex_unlock(&mutex_node_count);
 
     while (1) {
         // receive message from client

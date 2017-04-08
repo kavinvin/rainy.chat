@@ -25,7 +25,6 @@ Node * insert(Node *next, Node *new_node) {
         printf("%d\n", node_count);
         return new_node;
     }
-    printf("inserting\n");
     Node *prev = next->prev;
     printf("locking\n");
     if (node_count > 1) pthread_mutex_lock(&prev->lock);
@@ -34,18 +33,12 @@ Node * insert(Node *next, Node *new_node) {
     new_node->next = next;
     new_node->prev = prev;
     printf("linked\n");
-    if (prev == NULL) printf("prev NULL\n");
-    if (next == NULL) printf("next NULL\n");
     prev->next = new_node;
     next->prev = new_node;
-    printf("attached\n");
+    printf("attatched\n");
     if (node_count > 1) pthread_mutex_unlock(&prev->lock);
     pthread_mutex_unlock(&next->lock);
     printf("unlocked\n");
-    pthread_mutex_lock(&mutex_node_count);
-    node_count++;
-    printf("%d\n", node_count);
-    pthread_mutex_unlock(&mutex_node_count);
     return new_node;
 }
 
@@ -55,27 +48,25 @@ Node * delete(Node *this) {
     if (this == NULL) {
         return NULL;
     }
-    printf("%s\n", "locking");
+    printf("locking\n");
     if (node_count > 1) pthread_mutex_lock(&prev->lock);
     pthread_mutex_lock(&this->lock);
     if (node_count > 2) pthread_mutex_lock(&next->lock);
-    printf("%s\n", "locked");
+    printf("locked\n");
     prev->next = next;
     next->prev = prev;
+    printf("unlinked\n");
     if (node_count > 1) pthread_mutex_unlock(&prev->lock);
     if (node_count > 2) pthread_mutex_unlock(&next->lock);
+    printf("neighbor unlocked\n");
     this->next = NULL;
     this->prev = NULL;
-    printf("%s\n", "unlinked");
+    printf("detached\n");
     pthread_mutex_unlock(&this->lock);
     pthread_mutex_destroy(&this->lock);
-    printf("%s\n", "unlocked");
+    printf("current unlocked\n");
     free(this);
-    printf("%s\n", "freed");
-    pthread_mutex_lock(&mutex_node_count);
-    node_count--;
-    printf("%d\n", node_count);
-    pthread_mutex_unlock(&mutex_node_count);
+    printf("freed\n");
     return next;
 }
 
