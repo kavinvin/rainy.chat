@@ -6,47 +6,66 @@
 
 #include "structure.h"
 
-Node * create(void *data, Node *next, Node *prev) {
+Node * create(void *data) {
     Node *new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
         printf("Error creating a new node.\n");
         return NULL;
     }
     new_node->data = data;
-    new_node->next = next;
-    new_node->prev = prev;
     pthread_mutex_init(&new_node->lock, NULL);
     return new_node;
 }
 
-Node * insert(Node *head, void *data) {
-    if (head == NULL) {
-        Node *new_node = create(data, NULL, NULL);
-        if (new_node == NULL) {
-            return NULL;
-        }
+Node * insert(Node *next, Node *new_node) {
+    if (node_count == 0) {
         new_node->next = new_node;
         new_node->prev = new_node;
         return new_node;
     }
-    Node *new_node = create(data, head, head->prev);
-    if (new_node == NULL) {
-        return NULL;
-    }
-    head->prev->next = new_node;
-    head->prev = new_node;
+    Node *prev = next->prev;
+    printf("locking\n");
+    if (node_count > 1) pthread_mutex_lock(&prev->lock);
+    pthread_mutex_lock(&next->lock);
+    printf("locked\n");
+    new_node->next = next;
+    new_node->prev = prev;
+    printf("linked\n");
+    prev->next = new_node;
+    next->prev = new_node;
+    printf("attatched\n");
+    if (node_count > 1) pthread_mutex_unlock(&prev->lock);
+    pthread_mutex_unlock(&next->lock);
+    printf("unlocked\n");
     return new_node;
 }
 
-void delete(Node *this) {
-    if (this == NULL) {
-        return;
+Node * delete(Node *this) {
+    Node *prev = this->prev;
+    Node *next = this->next;
+    if (this == NULL || prev == NULL || next == NULL) {
+        return NULL;
     }
-    this->prev->next = this->next;
-    this->next->prev = this->prev;
+    printf("locking\n");
+    if (node_count > 1) pthread_mutex_lock(&prev->lock);
+    pthread_mutex_lock(&this->lock);
+    if (node_count > 2) pthread_mutex_lock(&next->lock);
+    printf("locked\n");
+    prev->next = next;
+    next->prev = prev;
+    printf("unlinked\n");
+    if (node_count > 1) pthread_mutex_unlock(&prev->lock);
+    if (node_count > 2) pthread_mutex_unlock(&next->lock);
+    printf("neighbor unlocked\n");
     this->next = NULL;
     this->prev = NULL;
+    printf("detached\n");
+    pthread_mutex_unlock(&this->lock);
+    pthread_mutex_destroy(&this->lock);
+    printf("current unlocked\n");
     free(this);
+    printf("freed\n");
+    return next;
 }
 
 void map(Node *this, callback function, void *argument) {

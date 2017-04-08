@@ -28,7 +28,7 @@ int open_handshake(int sockfd) {
     if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
         printf("%s\n", "ERROR on receiving handshake message");
         close(sockfd);
-        pthread_exit(NULL);
+        return -1;
     }
 
     part = strtok(cli_handshake, "\r");
@@ -61,17 +61,16 @@ int open_handshake(int sockfd) {
 
     free(sec_ws_accept);
 
-    return 1;
+    return 0;
 
 }
 
 void ws_send(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int skip;
-    char buffer[BUFFERSIZE];
+    char buffer[MSG_BUFFER];
 
     memset(buffer, 0, sizeof(buffer));
-    printf("%llu\n", frame->size);
 
     if (frame->size <= 125) {
         skip = 2;
@@ -163,21 +162,19 @@ void broadcast(Node *cursor, void *frame_void) {
 
 void removeNode(Node *this) {
     printf("%s\n", "Removing node..");
-    if (this == head) {
-        head = head->next;
-        if (head == head->next) {
-            head = NULL;
-        }
-    }
     removeUser(this->data);
+    if (this == head) head = this->next;
     delete(this);
+    pthread_mutex_lock(&mutex_node_count);
+    node_count--;
+    pthread_mutex_unlock(&mutex_node_count);
     printf("%s\n", "Node removed");
 }
 
 void removeUser(User *user) {
     printf("%s\n", "Removing user..");
     close(user->socket);
-    free(user->name);
+    // free((char*)user->name);
     free(user);
     printf("%s\n", "User removed");
 }

@@ -10,6 +10,11 @@ int main(int argc, char *argv[]) {
     char *host = argv[1];
     char *port = argv[2];
     pthread_t server_thread;
+    node_count = 0;
+
+    // init mutex
+    pthread_mutex_init(&mutex_node_count, NULL);
+
     sockfd = initSocket(host, port);
     if (sockfd < 0) {
         exit(1);
@@ -67,15 +72,15 @@ void initClient(int *sockfd) {
 
 void *initRecvSession(void *user_param) {
     User *user = (User*)user_param;
+    Node *this;
     char *message;
     http_frame frame;
-
-    // login functions here
+    json_t* json;
+    json_error_t error;
+    char *roomname;
 
     // assign temporary username
     user->thread_id = pthread_self();
-    user->name = calloc(20, sizeof(char));
-    strcpy(user->name, "anonymous");
 
     if (open_handshake(user->socket) < 0) {
         perror("handshaking failed");
@@ -83,24 +88,41 @@ void *initRecvSession(void *user_param) {
         pthread_exit(NULL);
     }
 
-    // prepend user to the linked list
-    // mutex
-    Node *this = insert(head, user);
+    // create node
+    this = create(user);
     if (this == NULL) {
+        printf("%s\n", "Error on creating node");
         removeUser(user);
         pthread_exit(NULL);
     }
-    head = this;
+
+    // prerequisite: username and roomname
+    memset(&frame, 0, sizeof(frame));
+    ws_recv(this, &frame); // mutex
+    json = json_loads(frame.message, 0, &error);
+    json_unpack(json, "{s:s, s:s}", "username", &user->name, "roomname", &roomname);
+    free(json);
+
+    // insert node
+    insert(head, this);
+    if (head == NULL) head = this;
+    pthread_mutex_lock(&mutex_node_count);
+    node_count++;
+    pthread_mutex_unlock(&mutex_node_count);
 
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
         ws_recv(this, &frame); // mutex
+        parseMessage(this, frame.message); // mutex
 
-        message = frame.message;
-        parseMessage(this, message); // mutex
+        // build json
+        json = json_pack("{s:s, s:s}", "username", user->name, "message", frame.message);
+        message = json_dumps(json, JSON_COMPACT);
+        free(json);
+        free(frame.message);
 
-        // send message to client
+        // send json to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
         frame.message = message;
@@ -111,7 +133,6 @@ void *initRecvSession(void *user_param) {
             pthread_exit(NULL);
         }
         map(this, broadcast, &frame); // mutex
-
         free(frame.message);
     }
 
