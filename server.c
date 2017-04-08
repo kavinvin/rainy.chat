@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     node_count = 0;
 
     // init mutex
-    pthread_mutex_init(&mutex_head, NULL);
+    pthread_mutex_init(&mutex_node_count, NULL);
 
     sockfd = initSocket(host, port);
     if (sockfd < 0) {
@@ -104,10 +104,10 @@ void *initRecvSession(void *user_param) {
     free(json);
 
     // insert node
-    pthread_mutex_lock(&mutex_head);
-    insert(head, this);
-    head = this;
-    pthread_mutex_unlock(&mutex_head);
+    // pthread_mutex_lock(&mutex_head);
+    head = insert(head, this);
+    // head = this;
+    // pthread_mutex_unlock(&mutex_head);
 
     while (1) {
         // receive message from client

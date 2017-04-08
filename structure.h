@@ -44,11 +44,11 @@ typedef struct thread_shared ThreadShared;
 typedef void (*callback)(Node *data, void *argument);
 Node * create(void *data);
 Node * insert(Node *head, Node *new_node);
-void delete(Node *this);
+Node * delete(Node *this);
 void map(Node *head, callback function, void *argument);
 
 Node *head;
 int node_count;
-pthread_mutex_t mutex_head;
+pthread_mutex_t mutex_node_count;
 
 #endif

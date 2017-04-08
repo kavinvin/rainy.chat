@@ -162,16 +162,8 @@ void broadcast(Node *cursor, void *frame_void) {
 
 void removeNode(Node *this) {
     printf("%s\n", "Removing node..");
-    pthread_mutex_lock(&mutex_head);
-    if (this == head) {
-        head = head->next;
-        if (head == head->next) {
-            head = NULL;
-        }
-    }
-    pthread_mutex_unlock(&mutex_head);
     removeUser(this->data);
-    delete(this);
+    head = delete(this);
     printf("%s\n", "Node removed");
 }
 
