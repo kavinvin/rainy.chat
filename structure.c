@@ -41,17 +41,16 @@ Node * insert(Node *next, Node *new_node) {
 }
 
 Node * delete(Node *this) {
-    if (this == NULL) {
+    Node *prev = this->prev;
+    Node *next = this->next;
+    if (this == NULL || prev == NULL || next == NULL) {
         return NULL;
     }
     printf("locking\n");
-    if (node_count > 1) pthread_mutex_lock(&this->prev->lock);
+    if (node_count > 1) pthread_mutex_lock(&prev->lock);
     pthread_mutex_lock(&this->lock);
-    if (node_count > 2) pthread_mutex_lock(&this->next->lock);
+    if (node_count > 2) pthread_mutex_lock(&next->lock);
     printf("locked\n");
-    Node *prev = this->prev;
-    Node *next = this->next;
-    printf("assigned\n");
     prev->next = next;
     next->prev = prev;
     printf("unlinked\n");
