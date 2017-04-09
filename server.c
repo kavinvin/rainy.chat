@@ -10,6 +10,7 @@ int main(int argc, char *argv[]) {
     char *host = argv[1];
     char *port = argv[2];
     pthread_t server_thread;
+    head = NULL;
     node_count = 0;
 
     // init mutex

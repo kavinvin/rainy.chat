@@ -20,7 +20,7 @@ Node * create(void *data) {
 }
 
 Node * insert(Node *next, Node *new_node) {
-    if (node_count == 0) {
+    if (next == NULL) {
         new_node->next = new_node;
         new_node->prev = new_node;
         return new_node;
@@ -34,11 +34,13 @@ Node * insert(Node *next, Node *new_node) {
     pthread_mutex_lock(&next->lock);
     printf("locked\n");
     new_node->next = next;
+    printf("next linked\n");
     new_node->prev = prev;
-    printf("linked\n");
+    printf("prev linked\n");
     prev->next = new_node;
+    printf("next attatched\n");
     next->prev = new_node;
-    printf("attatched\n");
+    printf("prev attatched\n");
     if (node_count > 1) pthread_mutex_unlock(&prev->lock);
     pthread_mutex_unlock(&next->lock);
     printf("unlocked\n");
@@ -46,9 +48,12 @@ Node * insert(Node *next, Node *new_node) {
 }
 
 Node * delete(Node *this) {
+    if (this == NULL) {
+        return NULL;
+    }
     Node *prev = this->prev;
     Node *next = this->next;
-    if (this == NULL || prev == NULL || next == NULL) {
+    if (prev == NULL || next == NULL) {
         return NULL;
     }
     printf("locking\n");

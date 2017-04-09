@@ -167,6 +167,7 @@ void removeNode(Node *this) {
     delete(this);
     pthread_mutex_lock(&mutex_node_count);
     node_count--;
+    if (node_count == 0) head = NULL;
     pthread_mutex_unlock(&mutex_node_count);
     printf("%s\n", "Node removed");
 }
