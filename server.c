@@ -10,10 +10,12 @@ int main(int argc, char *argv[]) {
     char *host = argv[1];
     char *port = argv[2];
     pthread_t server_thread;
-    node_count = 0;
+    all_users = malloc(sizeof(all_users));
+    all_users->count = 0;
+    all_users->head = NULL;
 
     // init mutex
-    pthread_mutex_init(&mutex_node_count, NULL);
+    pthread_mutex_init(&all_users->lock, NULL);
 
     sockfd = initSocket(host, port);
     if (sockfd < 0) {
@@ -73,15 +75,16 @@ void initClient(int *sockfd) {
 void *initRecvSession(void *user_param) {
     User *user = (User*)user_param;
     Node *this;
-    char *message;
     http_frame frame;
+    char *message;
+    char *roomname;
     json_t* json;
     json_error_t error;
-    char *roomname;
 
     // assign temporary username
     user->thread_id = pthread_self();
     user->name = NULL;
+    user->err_count = 0;
 
     if (open_handshake(user->socket) < 0) {
         perror("handshaking failed");
@@ -105,16 +108,19 @@ void *initRecvSession(void *user_param) {
     free(json);
 
     // insert node
-    insert(head, this);
-    if (head == NULL) head = this;
-    pthread_mutex_lock(&mutex_node_count);
-    node_count++;
-    pthread_mutex_unlock(&mutex_node_count);
+    append(all_users, this);
 
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
-        ws_recv(this, &frame); // mutex
+        if (ws_recv(this, &frame) < 0) {
+            user->err_count++;
+            if (user->err_count > 20) {
+                removeNode(this);
+                pthread_exit(NULL);
+            }
+            continue;
+        };
         parseMessage(this, frame.message); // mutex
 
         // build json
