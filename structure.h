@@ -31,10 +31,15 @@ struct node_t {
     pthread_mutex_t lock;
 };
 
-struct thread_shared {
-    struct user_t *user;
-    struct node_t *users;
-};
+typedef struct {
+    struct node_t *head;
+    int count;
+} List;
+
+// struct thread_shared {
+//     struct user_t *user;
+//     struct node_t *users;
+// };
 
 typedef struct user_t User;
 typedef struct room_t Room;
@@ -43,11 +48,13 @@ typedef struct thread_shared ThreadShared;
 
 typedef void (*callback)(Node *data, void *argument);
 Node * create(void *data);
-Node * insert(Node *head, Node *new_node);
-Node * delete(Node *this);
+Node * append(List *list, Node *new_node);
+Node * delete(List *list, Node *this);
+void nodeLock(pthread_mutex_t *prev, pthread_mutex_t *this, pthread_mutex_t *next, int count);
+void nodeUnlock(pthread_mutex_t *prev, pthread_mutex_t *this, pthread_mutex_t *next, int count);
 void map(Node *head, callback function, void *argument);
 
-Node *head;
+List *all_users;
 int node_count;
 pthread_mutex_t mutex_node_count;
 

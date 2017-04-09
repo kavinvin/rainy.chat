@@ -10,8 +10,9 @@ int main(int argc, char *argv[]) {
     char *host = argv[1];
     char *port = argv[2];
     pthread_t server_thread;
-    head = NULL;
-    node_count = 0;
+    all_users = malloc(sizeof(all_users));
+    all_users->count = 0;
+    all_users->head = NULL;
 
     // init mutex
     pthread_mutex_init(&mutex_node_count, NULL);
@@ -74,11 +75,11 @@ void initClient(int *sockfd) {
 void *initRecvSession(void *user_param) {
     User *user = (User*)user_param;
     Node *this;
-    char *message;
     http_frame frame;
+    char *message;
+    char *roomname;
     json_t* json;
     json_error_t error;
-    char *roomname;
 
     // assign temporary username
     user->thread_id = pthread_self();
@@ -106,11 +107,7 @@ void *initRecvSession(void *user_param) {
     free(json);
 
     // insert node
-    insert(head, this);
-    if (head == NULL) head = this;
-    pthread_mutex_lock(&mutex_node_count);
-    node_count++;
-    pthread_mutex_unlock(&mutex_node_count);
+    append(all_users, this);
 
     while (1) {
         // receive message from client
