@@ -15,6 +15,7 @@ struct user_t {
     char *name;
     int socket;
     pthread_t thread_id;
+    int err_count;
     // struct room_t *rooms;
 };
 

@@ -84,6 +84,7 @@ void *initRecvSession(void *user_param) {
     // assign temporary username
     user->thread_id = pthread_self();
     user->name = NULL;
+    user->err_count = 0;
 
     if (open_handshake(user->socket) < 0) {
         perror("handshaking failed");
@@ -112,7 +113,13 @@ void *initRecvSession(void *user_param) {
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
-        ws_recv(this, &frame); // mutex
+        if (ws_recv(this, &frame) < 0) {
+            user->err_count++;
+            if (user->err_count > 20) {
+                removeNode(this);
+                pthread_exit(NULL);
+            }
+        };
         parseMessage(this, frame.message); // mutex
 
         // build json

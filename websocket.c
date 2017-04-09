@@ -65,7 +65,7 @@ int open_handshake(int sockfd) {
 
 }
 
-void ws_send(Node *this, http_frame *frame) {
+int ws_send(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int skip;
     char buffer[MSG_BUFFER];
@@ -100,11 +100,12 @@ void ws_send(Node *this, http_frame *frame) {
         pthread_exit(NULL);
     }
     printf("Message sent to: %d\n", user->socket);
+    return 0;
 }
 
-void ws_recv(Node *this, http_frame *frame) {
+int ws_recv(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
-    int length, hasmask, skip;
+    int opcode, length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
         printf("%s\n", "Error on recieving message");
@@ -112,8 +113,20 @@ void ws_recv(Node *this, http_frame *frame) {
         pthread_exit(NULL);
     }
 
+    opcode = buffer[0] & 0xff;
     hasmask = buffer[1] & 0x80 ? 1 : 0;
     length = buffer[1] & 0x7f;
+    if (opcode != 129) {
+        // bad opcode
+        printf("Bad opcode\n");
+        return -1;
+    }
+    if (!hasmask) {
+        // remove opcode
+        printf("Message not masked");
+        removeNode(this);
+        pthread_exit(NULL);
+    }
     if (length <= 125) {
         // get mask
         skip = 6; // 2 + 0 + 4
@@ -146,7 +159,7 @@ void ws_recv(Node *this, http_frame *frame) {
     for (uint64_t i=0; i<frame->size; i++){
         frame->message[i] = frame->message[i] ^ frame->mask[i % 4];
     }
-
+    return 0;
 }
 
 void printname(Node *cursor, void *none) {
