@@ -24,7 +24,6 @@ structure.o: structure.c structure.h includes.h
 base64.o: base64.c base64.h includes.h
 	$(CC) $(CFLAGS) -c base64.c
 
-
 .PHONY : clean
 clean:
 	-rm $(EXEC) *.o

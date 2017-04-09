@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
     all_users->head = NULL;
 
     // init mutex
-    pthread_mutex_init(&mutex_node_count, NULL);
+    pthread_mutex_init(&all_users->lock, NULL);
 
     sockfd = initSocket(host, port);
     if (sockfd < 0) {

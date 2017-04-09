@@ -29,11 +29,13 @@ struct node_t {
     struct node_t *next;
     struct node_t *prev;
     pthread_mutex_t lock;
+    int attached;
 };
 
 typedef struct {
     struct node_t *head;
     int count;
+    pthread_mutex_t lock;
 } List;
 
 // struct thread_shared {
@@ -50,12 +52,8 @@ typedef void (*callback)(Node *data, void *argument);
 Node * create(void *data);
 Node * append(List *list, Node *new_node);
 Node * delete(List *list, Node *this);
-void nodeLock(pthread_mutex_t *prev, pthread_mutex_t *this, pthread_mutex_t *next, int count);
-void nodeUnlock(pthread_mutex_t *prev, pthread_mutex_t *this, pthread_mutex_t *next, int count);
 void map(Node *head, callback function, void *argument);
 
 List *all_users;
-int node_count;
-pthread_mutex_t mutex_node_count;
 
 #endif

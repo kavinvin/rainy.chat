@@ -15,81 +15,94 @@ Node * create(void *data) {
     new_node->data = data;
     new_node->next = NULL;
     new_node->prev = NULL;
+    new_node->attached = 0;
     pthread_mutex_init(&new_node->lock, NULL);
     return new_node;
 }
 
-Node * append(List *list, Node *new_node) {
-    Node *first = list->head;
-    if (first == NULL) {
+Node * append(List *list, Node *this) {
+    pthread_mutex_lock(&list->lock);
+    if (list->count == 0) {
         // link to self
-        new_node->next = new_node;
-        new_node->prev = new_node;
-        return new_node;
+        this->next = this;
+        this->prev = this;
+        this->attached = 1;
+        list->count++;
+        printf("node count: %d\n", list->count);
+        list->head = this;
+        pthread_mutex_unlock(&list->lock);
+        return this;
     }
+    printf("locking\n");
+    pthread_mutex_lock(&list->head->lock);
+    Node *first = list->head;
     Node *last = first->prev;
-    // printf("locking\n");
-    nodeLock(&first->lock, NULL, &last->lock, list->count);
-    // printf("locked\n");
-    new_node->next = first;
-    // printf("next linked\n");
-    new_node->prev = last;
-    // printf("prev linked\n");
-    first->prev = new_node;
-    // printf("first attatched\n");
-    last->next = new_node;
-    // printf("last attatched\n");
+    if (list->count > 1) pthread_mutex_lock(&last->lock);
+    printf("locked\n");
+    pthread_mutex_unlock(&list->lock);
+
+    this->next = first;
+    printf("next linked\n");
+    this->prev = last;
+    printf("prev linked\n");
+    first->prev = this;
+    printf("first attached\n");
+    last->next = this;
+    printf("last attached\n");
     list->count++;
     // increment count
-    nodeUnlock(&first->lock, NULL, &last->lock, list->count);
-    // printf("unlocked\n");
-    if (first == NULL) first = new_node;
-    // printf("head switched\n");
-    return new_node;
+    this->attached = 1;
+    pthread_mutex_unlock(&first->lock);
+    if (list->count > 2) pthread_mutex_unlock(&last->lock);
+    printf("unlocked\n");
+    printf("node count: %d\n", list->count);
+    return this;
 }
 
 Node * delete(List *list, Node *this) {
-    if (this == list->head) list->head = this->next;
-    if (this == NULL) {
+    if (!this->attached) {
+        // node detached is in detached state
+        pthread_mutex_destroy(&this->lock);
+        free(this);
         return NULL;
     }
+    pthread_mutex_lock(&list->lock);
+    if (this == list->head) {
+        // switch head before delete
+        list->head = this->next;
+    }
+    printf("locking\n");
+    pthread_mutex_lock(&this->lock);
     Node *prev = this->prev;
     Node *next = this->next;
-    if (prev == NULL || next == NULL) {
-        return NULL;
-    }
-    // printf("locking\n");
-    nodeLock(&prev->lock, &this->lock, &next->lock, list->count);
-    // printf("locked\n");
+    if (list->count > 1) pthread_mutex_lock(&next->lock);
+    if (list->count > 2) pthread_mutex_lock(&prev->lock);
+    printf("locked\n");
+    pthread_mutex_unlock(&list->lock);
+    // assigned
     prev->next = next;
     next->prev = prev;
-    // printf("unlinked\n");
+    printf("unlinked\n");
     this->next = NULL;
     this->prev = NULL;
-    // printf("detached\n");
+    printf("detached\n");
     list->count--;
     // decrement count
-    if (list->count == 0) list->head = NULL;
+    if (list->count == 0) {
+        // assign null pointer to head
+        list->head = NULL;
+    }
     // assign null pointer to head
-    nodeUnlock(&prev->lock, &this->lock, &next->lock, list->count);
-    // printf("unlocked\n");
+    pthread_mutex_unlock(&this->lock);
+    if (list->count > 0) pthread_mutex_unlock(&next->lock);
+    if (list->count > 1) pthread_mutex_unlock(&prev->lock);
+    printf("unlocked\n");
     pthread_mutex_destroy(&this->lock);
     // destroy mutex
     free(this);
-    // printf("freed\n");
+    printf("freed\n");
+    printf("node count: %d\n", list->count);
     return next;
-}
-
-void nodeLock(pthread_mutex_t *prev, pthread_mutex_t *this, pthread_mutex_t *next, int count) {
-    if (count > 1 && prev != NULL) pthread_mutex_lock(prev);
-    if (this != NULL) pthread_mutex_lock(this);
-    if (count > 2 && next != NULL) pthread_mutex_lock(next);
-}
-
-void nodeUnlock(pthread_mutex_t *prev, pthread_mutex_t *this, pthread_mutex_t *next, int count) {
-    if (count > 1 && prev != NULL) pthread_mutex_unlock(prev);
-    if (this != NULL) pthread_mutex_unlock(this);
-    if (count > 2 && next != NULL) pthread_mutex_unlock(next);
 }
 
 void map(Node *this, callback function, void *argument) {
