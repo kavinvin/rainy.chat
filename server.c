@@ -119,6 +119,7 @@ void *initRecvSession(void *user_param) {
                 removeNode(this);
                 pthread_exit(NULL);
             }
+            continue;
         };
         parseMessage(this, frame.message); // mutex
 
