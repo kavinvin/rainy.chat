@@ -14,8 +14,11 @@ int main(int argc, char *argv[]) {
     all_users->count = 0;
     all_users->head = NULL;
 
+    printLog("Server started\n");
+
     // init mutex
     pthread_mutex_init(&all_users->lock, NULL);
+    pthread_mutex_init(&mutex_log, NULL);
 
     sockfd = initSocket(host, port);
     if (sockfd < 0) {
@@ -45,22 +48,22 @@ void initClient(int *sockfd) {
 
         // accept incoming request, create new client socket
         user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
-        printf("\n------------------------------------------------------------\n");
-        showStatus("Accepting client");
+        printLog("\n------------------------------------------------------------\n");
+        printLog("Accepting client\n");
         if (user->socket < 0) {
             free(user);
-            perror("ERROR on accepting");
+            printLog("Error on accepting: %s\n", strerror(errno));
             continue;
         }
 
-        printf("Client socket id: %d\n", user->socket);
+        printLog("Client socket id: %d\n", user->socket);
 
         thread_id = malloc(sizeof(pthread_t));
 
         state = pthread_create(thread_id, NULL, initRecvSession, (void*)user);
-        showStatus("Creating new thread");
+        printLog("Creating new thread\n");
         if (state){
-            printf("ERROR: return code from pthread_create() is %d\n", state);
+            printLog("ERROR: return code from pthread_create() is %d\n", state);
             close(user->socket);
             free(thread_id);
             free(user);
@@ -87,7 +90,7 @@ void *initRecvSession(void *user_param) {
     user->err_count = 0;
 
     if (open_handshake(user->socket) < 0) {
-        perror("handshaking failed");
+        printLog("Handshaking failed\n");
         removeUser(user);
         pthread_exit(NULL);
     }
@@ -95,7 +98,7 @@ void *initRecvSession(void *user_param) {
     // create node
     this = create(user);
     if (this == NULL) {
-        printf("%s\n", "Error on creating node");
+        printLog("Error on creating node\n");
         removeUser(user);
         pthread_exit(NULL);
     }
@@ -165,32 +168,32 @@ int parseMessage(Node *this, char *message) {
         return 0;
     } else {
         // message mode
-        printf("Here is the message from no.%d: %s\n", user->socket, message);
+        printLog("Here is the message from no.%d: %s\n", user->socket, message);
         return 1;
     }
 }
 
 void clientRequest(Node *this, char *command) {
     if (strcmp(command, "/exit") == 0) {
-        printf("Exited\n");
+        printLog("Exited\n");
         removeNode(this);
         pthread_exit(NULL);
     } else {
-        printf("Client command not found\n");
+        printLog("Client command not found\n");
     }
 }
 
 void serverCommand(int *sockfd, char *command) {
-    printf("got command\n");
+    printLog("got command\n");
     if (strcmp(command, "/exit\n") == 0) {
-        printf("Shutting down...\n");
+        printLog("Shutting down...\n");
         // while (head != NULL) {
         //     removeNode(head->prev);
         // }
         close(*sockfd);
-        printf("Socket Closed\n");
+        printLog("Socket Closed\n");
         exit(0);
     } else {
-        printf("Server command not found\n");
+        printLog("Server command not found\n");
     }
 }

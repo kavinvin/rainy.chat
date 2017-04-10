@@ -5,6 +5,7 @@
 */
 
 #include "includes.h"
+#include "helper.h"
 
 #ifndef STRUCTURE_H_
 #define STRUCTURE_H_

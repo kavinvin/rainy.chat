@@ -61,6 +61,16 @@ void strLower(char *string) {
     for (; *string; ++string) *string = tolower(*string);
 }
 
-void showStatus(char *string) {
-    printf("-- %s --\n", string);
+void printLog(char *format, ...) {
+    pthread_mutex_lock(&mutex_log);
+    logfile = fopen("output/log.out", "a");
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    va_start(args, format);
+    vfprintf(logfile, format, args);
+    va_end(args);
+    fclose(logfile);
+    pthread_mutex_unlock(&mutex_log);
 }
