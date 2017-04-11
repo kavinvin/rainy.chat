@@ -63,7 +63,7 @@ void strLower(char *string) {
 
 void printlog(char *format, ...) {
     pthread_mutex_lock(&mutex_log);
-    logfile = fopen("output/log.out", "a");
+    logfile = fopen("output/rainy.log", "a");
     va_list args;
     va_start(args, format);
     vprintf(format, args);
