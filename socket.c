@@ -11,9 +11,9 @@ int initSocket(char *host, char *portno) {
 
     // create socket
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    printLog("Creating socket\n");
+    printlog("Creating socket\n");
     if (sockfd < 0) {
-        printLog("ERROR on opening socket: %s\n", strerror(errno));
+        printlog("ERROR on opening socket: %s\n", strerror(errno));
         return -1;
     }
 
@@ -24,16 +24,16 @@ int initSocket(char *host, char *portno) {
     server_address.sin_addr.s_addr = inet_addr(host); // inet_addr convert dot notation into network address in Network Byte Order
 
     // bind the socket to the server address
-    printLog("Binding\n");
+    printlog("Binding\n");
     if (bind(sockfd, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
-        printLog("ERROR on binding: %s\n", strerror(errno));
+        printlog("ERROR on binding: %s\n", strerror(errno));
         return -1;
     }
 
     // listening to the socket
-    printLog("Listening\n");
+    printlog("Listening\n");
     if (listen(sockfd, 5)) {
-        printLog("ERROR on listening: %s\n", strerror(errno));
+        printlog("ERROR on listening: %s\n", strerror(errno));
         return -1;
     }
 

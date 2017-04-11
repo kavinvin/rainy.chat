@@ -18,7 +18,7 @@ socket.o: socket.c socket.h helper.o
 helper.o: helper.c helper.h structure.o
 	$(CC) $(CFLAGS) -c helper.c
 
-structure.o: structure.c structure.h includes.h
+structure.o: structure.c structure.h includes.h error.h
 	$(CC) $(CFLAGS) -c structure.c
 
 base64.o: base64.c base64.h includes.h

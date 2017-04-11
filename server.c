@@ -7,66 +7,115 @@
 
 int main(int argc, char *argv[]) {
     int sockfd;
-    char *host = argv[1];
-    char *port = argv[2];
-    pthread_t server_thread;
-    all_users = malloc(sizeof(all_users));
-    all_users->count = 0;
-    all_users->head = NULL;
+    char *host, *port;
 
-    printLog("Server started\n");
+    parseAddr(argc, argv, &host, &port);
 
-    // init mutex
-    pthread_mutex_init(&all_users->lock, NULL);
-    pthread_mutex_init(&mutex_log, NULL);
+    // start server
+    sockfd = startServer(host, port);
 
-    sockfd = initSocket(host, port);
-    if (sockfd < 0) {
-        exit(1);
-    }
-    // pthread_create(&server_thread, NULL, initServerSession, (void*)&sockfd);
-    initClient(&sockfd);
-    close(sockfd);
-    pthread_exit(NULL);
+    // create user linked list globally
+    List *all_users = newList();
+
+    // prepare mutex
+    initMutex(3, &all_users->lock, &mutex_log, &mutex_accept);
+
+    // create thread serving each client
+    forkService(sockfd, all_users);
+
+    // free memory
 }
 
-void initClient(int *sockfd) {
+/**
+ * Function: parseAddr
+ * ----------------------------
+ *   parse command line argument for host and port
+ *   if not found, request them from stdin
+ */
+void parseAddr(int argc, char *argv[], char **host, char **port) {
+    // ask for host and port
+    if (argc <= 1) {
+        *host = calloc(1, 20);
+        *port = calloc(1, 10);
+        fputs("host: ", stdout);
+        fgets(*host, 20, stdin);
+        fputs("port: ", stdout);
+        fgets(*port, 10, stdin);
+    //  get host and port from argument
+    } else {
+        *host = argv[1];
+        *port = argv[2];
+    }
+}
+
+/**
+ * Function: startServer
+ * ----------------------------
+ *   prepare server before service clients
+ *   return socket descriptor, exit if failed
+ */
+int startServer(char *host, char *port) {
+    printlog("Server started\n");
+    int sockfd = initSocket(host, port);
+    if (sockfd < 0) {
+        pthread_exit(NULL);
+    };
+    return sockfd;
+}
+
+/**
+ * Function: newList
+ * ----------------------------
+ *   create double-circular linked list structure
+ *   return List pointer
+ */
+List *newList(void) {
+    List *userList;
+    userList = malloc(sizeof(userList));
+    userList->count = 0;
+    userList->head = NULL;
+    return userList;
+}
+
+/**
+ * Function: initMutex
+ * ----------------------------
+ *   init all given mutex structure
+ *   return 0 if success, -1 if failed
+ */
+int initMutex(int count, ...) {
+    va_list args;
+    va_start(args, count);
+    for (int i=0; i<count; i++) {
+        if (pthread_mutex_init( va_arg(args, pthread_mutex_t*), NULL ) != 0) {
+            printlog("Error on mutex init: %s\n", strerror(errno));
+            return -1;
+        }
+    }
+    va_end(args);
+    return 0;
+}
+
+void forkService(int sockfd, List *all_users) {
     int state;
-    struct sockaddr_in cli_addr;
-    socklen_t clilen = sizeof(cli_addr);
+    pthread_args_t args;
+    args.sockfd = sockfd;
+    args.list = all_users;
+    printf("Not yet\n");
+
     pthread_t *thread_id;
     pthread_attr_t attr;
-    User *user;
-
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
     while (1) {
 
-        // create user: should test if successfully create a user
-        user = malloc(sizeof(User));
-
-        // accept incoming request, create new client socket
-        user->socket = accept(*sockfd, (struct sockaddr *) &cli_addr, &clilen);
-        printLog("\n------------------------------------------------------------\n");
-        printLog("Accepting client\n");
-        if (user->socket < 0) {
-            free(user);
-            printLog("Error on accepting: %s\n", strerror(errno));
-            continue;
-        }
-
-        printLog("Client socket id: %d\n", user->socket);
-
         thread_id = malloc(sizeof(pthread_t));
-
-        state = pthread_create(thread_id, NULL, initRecvSession, (void*)user);
-        printLog("Creating new thread\n");
+        pthread_mutex_lock(&mutex_accept);
+        state = pthread_create(thread_id, NULL, initRecvSession, (void*)&args);
         if (state){
-            printLog("ERROR: return code from pthread_create() is %d\n", state);
-            close(user->socket);
+            printlog("ERROR: return code from pthread_create() is %d\n", state);
             free(thread_id);
-            free(user);
         }
 
     }
@@ -75,22 +124,28 @@ void initClient(int *sockfd) {
 
 }
 
-void *initRecvSession(void *user_param) {
-    User *user = (User*)user_param;
+void *initRecvSession(void *param) {
+    printlog("Creating new thread\n");
+
+    // convert void pointer to arguments
+    pthread_args_t *args = (pthread_args_t*)param;
+    int sockfd = args->sockfd;
+    List *all_users = args->list;
+
+    User *user;
     Node *this;
+
+    user = acceptUser(sockfd);
+
     http_frame frame;
     char *message;
     char *roomname;
     json_t* json;
-    json_error_t error;
+    json_error_t json_err;
 
-    // assign temporary username
-    user->thread_id = pthread_self();
-    user->name = NULL;
-    user->err_count = 0;
 
     if (open_handshake(user->socket) < 0) {
-        printLog("Handshaking failed\n");
+        printlog("Handshaking failed\n");
         removeUser(user);
         pthread_exit(NULL);
     }
@@ -98,15 +153,17 @@ void *initRecvSession(void *user_param) {
     // create node
     this = create(user);
     if (this == NULL) {
-        printLog("Error on creating node\n");
+        printlog("Error on creating node\n");
         removeUser(user);
         pthread_exit(NULL);
     }
 
     // prerequisite: username and roomname
     memset(&frame, 0, sizeof(frame));
-    ws_recv(this, &frame); // mutex
-    json = json_loads(frame.message, 0, &error);
+    if (ws_recv(this, &frame) < 0) {
+        removeNode(all_users, this);
+    } // mutex
+    json = json_loads(frame.message, 0, &json_err);
     json_unpack(json, "{s:s, s:s}", "username", &user->name, "roomname", &roomname);
     free(json);
 
@@ -116,15 +173,11 @@ void *initRecvSession(void *user_param) {
     while (1) {
         // receive message from client
         memset(&frame, 0, sizeof(frame));
-        if (ws_recv(this, &frame) < 0) {
-            user->err_count++;
-            if (user->err_count > 20) {
-                removeNode(this);
-                pthread_exit(NULL);
-            }
-            continue;
+        if (ws_recv(this, &frame) != SUCCESS) {
+            removeNode(all_users, this);
+            pthread_exit(NULL);
         };
-        parseMessage(this, frame.message); // mutex
+        parseMessage(all_users, this, frame.message); // mutex
 
         // build json
         json = json_pack("{s:s, s:s}", "username", user->name, "message", frame.message);
@@ -139,15 +192,44 @@ void *initRecvSession(void *user_param) {
         frame.size = strlen(frame.message);
         // protect from receiving message more than 1200 characters
         if (frame.size > 1200) {
-            removeNode(this);
+            removeNode(all_users, this);
             pthread_exit(NULL);
         }
         map(this, broadcast, &frame); // mutex
         free(frame.message);
     }
 
-    removeNode(this);
+    removeNode(all_users, this);
     pthread_exit(NULL);
+}
+
+User *acceptUser(int sockfd) {
+    struct sockaddr_in cli_addr;
+    socklen_t clilen = sizeof(cli_addr);
+
+    // create user: should test if successfully create a user
+    User *user = malloc(sizeof(User));
+    if (!user) {
+        pthread_exit(NULL);
+    }
+
+    // accept incoming request, create new client socket
+    user->socket = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+    pthread_mutex_unlock(&mutex_accept);
+
+    printlog("Accepting client\n");
+    if (user->socket < 0) {
+        printlog("Error on accepting: %s\n", strerror(errno));
+        free(user);
+        pthread_exit(NULL);
+    }
+    printlog("Client socket id: %d\n", user->socket);
+
+    user->thread_id = pthread_self();
+    user->name = NULL;
+    user->err_count = 0;
+
+    return user;
 }
 
 void *initServerSession(void *sockfd_param) {
@@ -160,40 +242,40 @@ void *initServerSession(void *sockfd_param) {
     pthread_exit(NULL);
 }
 
-int parseMessage(Node *this, char *message) {
+int parseMessage(List *all_users, Node *this, char *message) {
     User *user = (User*)this->data;
     if (*message == '/') {
         // command mode
-        clientRequest(this, message);
+        clientRequest(all_users, this, message);
         return 0;
     } else {
         // message mode
-        printLog("Here is the message from no.%d: %s\n", user->socket, message);
+        printlog("Here is the message from no.%d: %s\n", user->socket, message);
         return 1;
     }
 }
 
-void clientRequest(Node *this, char *command) {
+void clientRequest(List *all_users, Node *this, char *command) {
     if (strcmp(command, "/exit") == 0) {
-        printLog("Exited\n");
-        removeNode(this);
+        printlog("Exited\n");
+        removeNode(all_users, this);
         pthread_exit(NULL);
     } else {
-        printLog("Client command not found\n");
+        printlog("Client command not found\n");
     }
 }
 
 void serverCommand(int *sockfd, char *command) {
-    printLog("got command\n");
+    printlog("got command\n");
     if (strcmp(command, "/exit\n") == 0) {
-        printLog("Shutting down...\n");
+        printlog("Shutting down...\n");
         // while (head != NULL) {
         //     removeNode(head->prev);
         // }
         close(*sockfd);
-        printLog("Socket Closed\n");
+        printlog("Socket Closed\n");
         exit(0);
     } else {
-        printLog("Server command not found\n");
+        printlog("Server command not found\n");
     }
 }

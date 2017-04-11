@@ -24,9 +24,9 @@ int open_handshake(int sockfd) {
 
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    printLog("Handshaking\n");
+    printlog("Handshaking\n");
     if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
-        printLog("%s\n", "ERROR on receiving handshake message\n");
+        printlog("%s\n", "ERROR on receiving handshake message\n");
         close(sockfd);
         return -1;
     }
@@ -40,12 +40,12 @@ int open_handshake(int sockfd) {
         hvalue = strtok(NULL, "\r");
         if (strcmp(hkey, "Sec-WebSocket-Key:") == 0) {
             sec_ws_key = hvalue;
-            printLog("Sec-WebSocket-Key: %s\n", sec_ws_key);
+            printlog("Sec-WebSocket-Key: %s\n", sec_ws_key);
         }
         if (strcmp(hkey, "User-Agent:") == 0) {
-            printLog("User-Agent: %s\n", hvalue);
+            printlog("User-Agent: %s\n", hvalue);
         }
-        // printLog("%s %s\n", hkey, hvalue);
+        // printlog("%s %s\n", hkey, hvalue);
     }
 
     // sha1, encode64
@@ -95,11 +95,10 @@ int ws_send(Node *this, http_frame *frame) {
 
     // send buffer to client
     if (send(user->socket, (void *)&buffer, frame->size + skip, 0) <= 0) {
-        printLog("%s\n", "Error on sending message");
-        removeNode(this);
-        pthread_exit(NULL);
+        printlog("%s\n", "Error on sending message");
+        return -1;
     }
-    printLog("Message sent to: %d\n", user->socket);
+    printlog("Message sent to: %d\n", user->socket);
     return 0;
 }
 
@@ -108,9 +107,8 @@ int ws_recv(Node *this, http_frame *frame) {
     int opcode, length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
-        printLog("%s\n", "Error on recieving message");
-        removeNode(this);
-        pthread_exit(NULL);
+        printlog("%s\n", "Error on recieving message");
+        return CLIENT_DISCONNECT;
     }
 
     opcode = buffer[0] & 0xff;
@@ -118,14 +116,13 @@ int ws_recv(Node *this, http_frame *frame) {
     length = buffer[1] & 0x7f;
     if (opcode != 129) {
         // bad opcode
-        printLog("Bad opcode\n");
-        return -1;
+        printlog("Bad opcode\n");
+        return INVALID_HEADER;
     }
     if (!hasmask) {
         // remove opcode
-        printLog("Message not masked\n");
-        removeNode(this);
-        pthread_exit(NULL);
+        printlog("Message not masked\n");
+        return INVALID_HEADER;
     }
     if (length <= 125) {
         // get mask
@@ -133,7 +130,7 @@ int ws_recv(Node *this, http_frame *frame) {
         frame->size = length;
         memcpy(frame->mask, buffer + 2, sizeof(frame->mask));
     } else if (length == 126) {
-        printLog("%s\n", "size = 126");
+        printlog("%s\n", "size = 126");
         // 2 byte length
         uint16_t len16;
         memcpy(&len16, buffer + 2, sizeof(uint16_t));
@@ -142,7 +139,7 @@ int ws_recv(Node *this, http_frame *frame) {
         frame->size = ntohs(len16);
         memcpy(frame->mask, buffer + 4, sizeof(frame->mask));
     } else if (length == 127) {
-        printLog("%s\n", "size = 127");
+        printlog("%s\n", "size = 127");
         // 8 byte length
         uint64_t len64;
         memcpy(&len64, buffer + 2, sizeof(uint64_t));
@@ -159,12 +156,12 @@ int ws_recv(Node *this, http_frame *frame) {
     for (uint64_t i=0; i<frame->size; i++){
         frame->message[i] = frame->message[i] ^ frame->mask[i % 4];
     }
-    return 0;
+    return SUCCESS;
 }
 
 void printname(Node *cursor, void *none) {
     User *user = (User*)(cursor->data);
-    printLog("%s\n", user->name);
+    printlog("%s\n", user->name);
 }
 
 void broadcast(Node *cursor, void *frame_void) {
@@ -173,17 +170,17 @@ void broadcast(Node *cursor, void *frame_void) {
     ws_send(cursor, frame);
 }
 
-void removeNode(Node *this) {
-    printLog("%s\n", "Removing node..");
+void removeNode(List *list, Node *this) {
+    printlog("%s\n", "Removing node..");
     removeUser(this->data);
-    delete(all_users, this);
-    printLog("%s\n", "Node removed");
+    delete(list, this);
+    printlog("%s\n", "Node removed");
 }
 
 void removeUser(User *user) {
-    printLog("%s\n", "Removing user..");
+    printlog("%s\n", "Removing user..");
     close(user->socket);
     if (user->name != NULL) free(user->name);
     free(user);
-    printLog("%s\n", "User removed");
+    printlog("%s\n", "User removed");
 }

@@ -61,7 +61,7 @@ void strLower(char *string) {
     for (; *string; ++string) *string = tolower(*string);
 }
 
-void printLog(char *format, ...) {
+void printlog(char *format, ...) {
     pthread_mutex_lock(&mutex_log);
     logfile = fopen("output/log.out", "a");
     va_list args;
