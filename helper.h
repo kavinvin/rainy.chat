@@ -21,8 +21,6 @@ char * slice(char *string, int stop);
 char * rstrip(char *string, char stripper);
 void printBits(size_t const size, void const * const ptr);
 void strLower(char *string);
-void printLog(char *format, ...);
-
-pthread_mutex_t mutex_log;
+void printlog(char *format, ...);
 
 #endif

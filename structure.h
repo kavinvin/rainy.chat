@@ -4,7 +4,7 @@
          the client and a server sides.
 */
 
-#include "includes.h"
+#include "error.h"
 #include "helper.h"
 
 #ifndef STRUCTURE_H_
@@ -36,7 +36,7 @@ struct node_t {
 
 typedef struct {
     struct node_t *head;
-    int count;
+    int len;
     pthread_mutex_t lock;
 } List;
 
@@ -56,6 +56,6 @@ Node * append(List *list, Node *new_node);
 Node * delete(List *list, Node *this);
 void map(Node *head, callback function, void *argument);
 
-List *all_users;
+pthread_mutex_t mutex_log;
 
 #endif

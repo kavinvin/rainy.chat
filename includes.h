@@ -12,8 +12,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
-#include <errno.h>
 #include <stdarg.h>
+#include <errno.h>
+#include <signal.h>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,7 +25,7 @@
 #include <pthread.h>
 #include <jansson.h>
 
-#define BUFFERSIZE 4096
+#define BUFFERSIZE 20000
 #define MSG_BUFFER 1300
 #define NUM_THREADS 8
 #define GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
