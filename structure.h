@@ -36,7 +36,7 @@ struct node_t {
 
 typedef struct {
     struct node_t *head;
-    int count;
+    int len;
     pthread_mutex_t lock;
 } List;
 

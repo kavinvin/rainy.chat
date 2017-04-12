@@ -8,20 +8,20 @@
 
 #include "websocket.h"
 
+int serve(char *host, char *port);
 void parseAddr(int argc, char *argv[], char **host, char **port);
-int startServer(char *host, char *port);
 List *newList(void);
 int initMutex(int count, ...);
-void forkService(int sockfd, List *all_users);
-User *acceptUser(int sockfd);
+void forkService(int server_socket, List *all_users);
+User *acceptUser(int server_socket);
 void *initRecvSession(void *user_param);
-void *initServerSession(void *sockfd_param);
+void *initServerSession(void *server_socket_param);
 int parseMessage(List *all_users, Node *this, char *message);
 void clientRequest(List *all_users, Node *this, char *command);
-void serverCommand(int *sockfd, char *command);
+void serverCommand(int *server_socket, char *command);
 
 typedef struct {
-    int sockfd;
+    int server_socket;
     List *list;
 } pthread_args_t;
 

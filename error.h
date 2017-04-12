@@ -12,4 +12,6 @@
 #define CLIENT_DISCONNECT 1
 #define INVALID_HEADER 2
 
+void sig_handler(int signal);
+
 #endif

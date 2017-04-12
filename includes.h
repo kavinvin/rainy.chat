@@ -12,8 +12,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
-#include <errno.h>
 #include <stdarg.h>
+#include <errno.h>
+#include <signal.h>
 
 #include <unistd.h>
 #include <sys/types.h>

@@ -18,9 +18,9 @@ typedef struct {
 } http_frame;
 
 char * get_handshake_key(char *str);
-int open_handshake(int sockfd);
-int ws_send(Node *this, http_frame *frame);
-int ws_recv(Node *this, http_frame *frame);
+int open_handshake(int server_socket);
+int wsSend(Node *this, http_frame *frame);
+int wsRecv(Node *this, http_frame *frame);
 void printname(Node *cursor, void *none);
 void broadcast(Node *cursor, void *frame);
 void removeNode(List *list, Node *this);

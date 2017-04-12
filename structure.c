@@ -22,13 +22,13 @@ Node * create(void *data) {
 
 Node * append(List *list, Node *this) {
     pthread_mutex_lock(&list->lock);
-    if (list->count == 0) {
+    if (list->len == 0) {
         // link to self
         this->next = this;
         this->prev = this;
         this->attached = 1;
-        list->count++;
-        printlog("node count: %d\n", list->count);
+        list->len++;
+        printlog("node len: %d\n", list->len);
         list->head = this;
         pthread_mutex_unlock(&list->lock);
         return this;
@@ -37,7 +37,7 @@ Node * append(List *list, Node *this) {
     pthread_mutex_lock(&list->head->lock);
     Node *first = list->head;
     Node *last = first->prev;
-    if (list->count > 1) pthread_mutex_lock(&last->lock);
+    if (list->len > 1) pthread_mutex_lock(&last->lock);
     printlog("locked\n");
     pthread_mutex_unlock(&list->lock);
 
@@ -49,13 +49,13 @@ Node * append(List *list, Node *this) {
     printlog("first attached\n");
     last->next = this;
     printlog("last attached\n");
-    list->count++;
-    // increment count
+    list->len++;
+    // increment len
     this->attached = 1;
     pthread_mutex_unlock(&first->lock);
-    if (list->count > 2) pthread_mutex_unlock(&last->lock);
+    if (list->len > 2) pthread_mutex_unlock(&last->lock);
     printlog("unlocked\n");
-    printlog("node count: %d\n", list->count);
+    printlog("node len: %d\n", list->len);
     return this;
 }
 
@@ -75,8 +75,8 @@ Node * delete(List *list, Node *this) {
     pthread_mutex_lock(&this->lock);
     Node *prev = this->prev;
     Node *next = this->next;
-    if (list->count > 1) pthread_mutex_lock(&next->lock);
-    if (list->count > 2) pthread_mutex_lock(&prev->lock);
+    if (list->len > 1) pthread_mutex_lock(&next->lock);
+    if (list->len > 2) pthread_mutex_lock(&prev->lock);
     printlog("locked\n");
     pthread_mutex_unlock(&list->lock);
     // assigned
@@ -86,22 +86,22 @@ Node * delete(List *list, Node *this) {
     this->next = NULL;
     this->prev = NULL;
     printlog("detached\n");
-    list->count--;
-    // decrement count
-    if (list->count == 0) {
+    list->len--;
+    // decrement len
+    if (list->len == 0) {
         // assign null pointer to head
         list->head = NULL;
     }
     // assign null pointer to head
     pthread_mutex_unlock(&this->lock);
-    if (list->count > 0) pthread_mutex_unlock(&next->lock);
-    if (list->count > 1) pthread_mutex_unlock(&prev->lock);
+    if (list->len > 0) pthread_mutex_unlock(&next->lock);
+    if (list->len > 1) pthread_mutex_unlock(&prev->lock);
     printlog("unlocked\n");
     pthread_mutex_destroy(&this->lock);
     // destroy mutex
     free(this);
     printlog("freed\n");
-    printlog("node count: %d\n", list->count);
+    printlog("node len: %d\n", list->len);
     return next;
 }
 

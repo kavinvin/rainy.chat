@@ -18,16 +18,17 @@ char * get_handshake_key(char *str) {
     return encoded;
 }
 
-int open_handshake(int sockfd) {
+int open_handshake(int server_socket) {
     char cli_handshake[BUFFERSIZE], serv_handshake[300], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
     int state;
 
+    printlog("-- Handshaking-- \n");
+
     // receive message from the client to buffer
     memset(&cli_handshake, 0, sizeof(cli_handshake));
-    printlog("Handshaking\n");
-    if (recv(sockfd, cli_handshake, BUFFERSIZE, 0) < 0) {
-        printlog("%s\n", "ERROR on receiving handshake message\n");
-        close(sockfd);
+    if (recv(server_socket, cli_handshake, BUFFERSIZE, 0) < 0) {
+        printlog("Handshaking failed\n");
+        close(server_socket);
         return -1;
     }
 
@@ -57,7 +58,7 @@ int open_handshake(int sockfd) {
     strcat(serv_handshake, "\r\n\r\n");
 
     // return handshake from the server
-    state = send(sockfd, serv_handshake, strlen(serv_handshake), 0);
+    state = send(server_socket, serv_handshake, strlen(serv_handshake), 0);
 
     free(sec_ws_accept);
 
@@ -65,7 +66,7 @@ int open_handshake(int sockfd) {
 
 }
 
-int ws_send(Node *this, http_frame *frame) {
+int wsSend(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int skip;
     char buffer[MSG_BUFFER];
@@ -102,7 +103,7 @@ int ws_send(Node *this, http_frame *frame) {
     return 0;
 }
 
-int ws_recv(Node *this, http_frame *frame) {
+int wsRecv(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int opcode, length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
@@ -167,7 +168,7 @@ void printname(Node *cursor, void *none) {
 void broadcast(Node *cursor, void *frame_void) {
     User *user = (User*)(cursor->data);
     http_frame *frame = (http_frame*)frame_void;
-    ws_send(cursor, frame);
+    wsSend(cursor, frame);
 }
 
 void removeNode(List *list, Node *this) {
