@@ -165,10 +165,13 @@ void printname(Node *cursor, void *none) {
     printlog("%s\n", user->name);
 }
 
-void broadcast(Node *cursor, void *frame_void) {
-    User *user = (User*)(cursor->data);
+int broadcast(Node *this, void *frame_void) {
+    User *user = (User*)(this->data);
     http_frame *frame = (http_frame*)frame_void;
-    wsSend(cursor, frame);
+    if (wsSend(this, frame) < 0) {
+        return -1;
+    }
+    return 0;
 }
 
 void removeNode(List *list, Node *this) {
@@ -181,7 +184,7 @@ void removeNode(List *list, Node *this) {
 void removeUser(User *user) {
     printlog("%s\n", "Removing user..");
     close(user->socket);
-    if (user->name != NULL) free(user->name);
+    free(user->name);
     free(user);
     printlog("%s\n", "User removed");
 }

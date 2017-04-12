@@ -22,7 +22,7 @@ int open_handshake(int server_socket);
 int wsSend(Node *this, http_frame *frame);
 int wsRecv(Node *this, http_frame *frame);
 void printname(Node *cursor, void *none);
-void broadcast(Node *cursor, void *frame);
+int broadcast(Node *cursor, void *message);
 void removeNode(List *list, Node *this);
 void removeUser(User *user);
 

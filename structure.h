@@ -50,11 +50,11 @@ typedef struct room_t Room;
 typedef struct node_t Node;
 typedef struct thread_shared ThreadShared;
 
-typedef void (*callback)(Node *data, void *argument);
+typedef int (*callback)(Node *data, void *argument);
 Node * create(void *data);
 Node * append(List *list, Node *new_node);
 Node * delete(List *list, Node *this);
-void map(Node *head, callback function, void *argument);
+int map(Node *head, callback function, void *argument);
 
 pthread_mutex_t mutex_log;
 

@@ -105,11 +105,14 @@ Node * delete(List *list, Node *this) {
     return next;
 }
 
-void map(Node *this, callback function, void *argument) {
+int map(Node *this, callback function, void *argument) {
     Node *cursor = this->next;
     User *user = (User*)cursor->data;
     while (cursor != this && cursor != NULL) {
-        function(cursor, argument);
+        if (function(cursor, argument) < 0) {
+            return -1;
+        }
         cursor = cursor->next;
     }
+    return 0;
 }

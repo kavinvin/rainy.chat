@@ -22,9 +22,6 @@ int serve(char *host, char *port) {
 
     // create server socket
     server_socket = initSocket(host, port);
-    if (server_socket < 0) {
-        return -1;
-    };
 
     // create users list
     List *all_users = newList();
@@ -149,25 +146,21 @@ void *initRecvSession(void *param) {
     User *user;
     Node *this;
 
-    // message frame
-    http_frame frame;
     char *message;
-    char *roomname;
-    json_t* json;
-    json_error_t json_err;
+    http_frame frame;
 
     printlog("Creating new thread\n");
 
     // accept new user and unlock mutex
     user = acceptUser(server_socket);
 
-    // web brower handshaking
+    // web browser handshaking
     if (open_handshake(user->socket) < 0) {
         removeUser(user);
         pthread_exit(NULL);
     }
 
-    // create new node if handshaking success
+    // create new user node if handshaking success
     this = create(user);
     if (this == NULL) {
         printlog("Error on creating node\n");
@@ -175,45 +168,32 @@ void *initRecvSession(void *param) {
         pthread_exit(NULL);
     }
 
-    // prerequisite: username and roomname
-    memset(&frame, 0, sizeof(frame));
-    if (wsRecv(this, &frame) < 0) {
-        removeNode(all_users, this);
-        pthread_exit(NULL);
-    }
-    json = json_loads(frame.message, 0, &json_err);
-    json_unpack(json, "{s:s, s:s}", "username", &user->name, "roomname", &roomname);
-    free(json);
+    // validate whether a user can join a chat room
+    validateUser(this, &frame);
 
     // append user node to chatroom
     append(all_users, this);
 
     while (1) {
         // receive message from client
-        memset(&frame, 0, sizeof(frame));
-        if (wsRecv(this, &frame) != SUCCESS) {
-            removeNode(all_users, this);
-            pthread_exit(NULL);
-        };
-        parseMessage(all_users, this, frame.message); // mutex
-
-        // build json
-        json = json_pack("{s:s, s:s}", "username", user->name, "message", frame.message);
-        message = json_dumps(json, JSON_COMPACT);
-        free(json);
-        free(frame.message);
+        message = getMessage(all_users, this, &frame);
 
         // send json to client
         memset(&frame, 0, sizeof(frame));
         frame.opcode = 129;
         frame.message = message;
         frame.size = strlen(frame.message);
+
         // protect from receiving message more than 1200 characters
         if (frame.size > 1200) {
             removeNode(all_users, this);
             pthread_exit(NULL);
         }
-        map(this, broadcast, &frame); // mutex
+
+        if (map(this, broadcast, &frame) < 0) {
+            removeNode(all_users, this);
+            pthread_exit(NULL);
+        }
         free(frame.message);
     }
 
@@ -234,6 +214,7 @@ User *acceptUser(int server_socket) {
     // create user: should test if successfully create a user
     User *user = malloc(sizeof(User));
     if (!user) {
+        printlog("Error on memory: %s\n", strerror(errno));
         pthread_exit(NULL);
     }
 
@@ -256,6 +237,56 @@ User *acceptUser(int server_socket) {
     return user;
 }
 
+/**
+ * Function: validateUser
+ * ----------------------------
+ *   ask for user preriquisite before joining room
+ *   return 0 if success, -1 if failied
+ */
+int validateUser(Node *this, http_frame *frame) {
+    User *user = (User*)this->data;
+    json_t* json;
+    json_error_t json_err;
+
+    memset(frame, 0, sizeof(*frame));
+    if (wsRecv(this, frame) != SUCCESS) {
+        removeUser(user);
+        pthread_exit(NULL);
+    }
+    json = json_loads(frame->message, 0, &json_err);
+    json_unpack(json, "{s:s}", "username", &user->name);
+    free(frame->message);
+    free(json);
+    return 0;
+}
+
+/**
+ * Function: getMessage
+ * ----------------------------
+ *   listen for a message from client
+ *   return 0 if success, -1 if failied
+ */
+char *getMessage(List *all_users, Node *this, http_frame *frame) {
+    User *user = (User*)this->data;
+    char *message;
+    json_t* json;
+    json_error_t json_err;
+
+    memset(frame, 0, sizeof(*frame));
+    if (wsRecv(this, frame) != SUCCESS) {
+        removeNode(all_users, this);
+        pthread_exit(NULL);
+    };
+    readMessage(all_users, this, frame->message); // mutex
+
+    // build json
+    json = json_pack("{s:s, s:s}", "username", user->name, "message", frame->message);
+    message = json_dumps(json, JSON_COMPACT);
+    free(json);
+    free(frame->message);
+    return message;
+}
+
 void *initServerSession(void *server_socket_param) {
     int *server_socket = (int*)server_socket_param;
     char command[20];
@@ -269,10 +300,10 @@ void *initServerSession(void *server_socket_param) {
 /**
  * Function: parseMessage
  * ----------------------------
- *   parse a message received from client
- *   return 0 if it's a special command, 1 if it's a text message
+ *   read a message received from client
+ *   return 0 if it's a command, 1 if it's a text message
  */
-int parseMessage(List *all_users, Node *this, char *message) {
+int readMessage(List *all_users, Node *this, char *message) {
     User *user = (User*)this->data;
     if (*message == '/') {
         // command mode
