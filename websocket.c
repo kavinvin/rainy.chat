@@ -160,7 +160,7 @@ int wsRecv(Node *this, http_frame *frame) {
     memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
 
-    printf("expected msg len: %llu\n", frame->size);
+    // printf("expected msg len: %llu\n", frame->size);
 
     // remove mask from data
     for (uint64_t i=0; i<frame->size; i++){

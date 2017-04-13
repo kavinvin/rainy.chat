@@ -257,6 +257,7 @@ int validateUser(Node *this, http_frame *frame) {
     }
     json = json_loads(frame->message, 0, &json_err);
     json_unpack(json, "{s:s}", "username", &user->name);
+    printf("username%s\n", user->name);
     free(frame->message);
     free(json);
     return 0;
