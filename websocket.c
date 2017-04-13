@@ -69,7 +69,7 @@ int open_handshake(int server_socket) {
 int wsSend(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int skip;
-    char buffer[MSG_BUFFER];
+    char buffer[BUFFERSIZE];
 
     memset(buffer, 0, sizeof(buffer));
 
@@ -107,6 +107,7 @@ int wsRecv(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int opcode, length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
+    memset(buffer, '\0', BUFFERSIZE);
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
         printlog("%s\n", "Error on recieving message");
         return CLIENT_DISCONNECT;
@@ -131,7 +132,7 @@ int wsRecv(Node *this, http_frame *frame) {
         frame->size = length;
         memcpy(frame->mask, buffer + 2, sizeof(frame->mask));
     } else if (length == 126) {
-        printlog("%s\n", "size = 126");
+        printlog("%s\n", "size = 126 extended");
         // 2 byte length
         uint16_t len16;
         memcpy(&len16, buffer + 2, sizeof(uint16_t));
@@ -140,18 +141,26 @@ int wsRecv(Node *this, http_frame *frame) {
         frame->size = ntohs(len16);
         memcpy(frame->mask, buffer + 4, sizeof(frame->mask));
     } else if (length == 127) {
-        printlog("%s\n", "size = 127");
+        printlog("%s\n", "size = 127 extended");
         // 8 byte length
         uint64_t len64;
         memcpy(&len64, buffer + 2, sizeof(uint64_t));
         // get mask
         skip = 14; // 2 + 8 + 4
-        frame->size = ntohl(len64);
+        frame->size = ntohl64(len64);
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
+
+    if (frame->size > 8000) {
+        printlog("Message too long\n");
+        return MESSAGE_TOO_LONG;
+    }
+
     frame->message = malloc(frame->size+1); // warning: memory leakage
     memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
+
+    printf("expected msg len: %llu\n", frame->size);
 
     // remove mask from data
     for (uint64_t i=0; i<frame->size; i++){
@@ -175,16 +184,12 @@ int broadcast(Node *this, void *frame_void) {
 }
 
 void removeNode(List *list, Node *this) {
-    printlog("%s\n", "Removing node..");
     removeUser(this->data);
     delete(list, this);
-    printlog("%s\n", "Node removed");
 }
 
 void removeUser(User *user) {
-    printlog("%s\n", "Removing user..");
     close(user->socket);
     free(user->name);
     free(user);
-    printlog("%s\n", "User removed");
 }

@@ -11,7 +11,7 @@
  *   start chat application server
  *   return 0 if success, -1 if failed
  */
-int serve(char *host, char *port) {
+int serveRainyChat(char *host, char *port) {
     int server_socket;
 
     printlog("-- Server started --\n");
@@ -185,7 +185,7 @@ void *initRecvSession(void *param) {
         frame.size = strlen(frame.message);
 
         // protect from receiving message more than 1200 characters
-        if (frame.size > 1200) {
+        if (frame.size > 10000) {
             removeNode(all_users, this);
             pthread_exit(NULL);
         }
@@ -228,11 +228,13 @@ User *acceptUser(int server_socket) {
         free(user);
         pthread_exit(NULL);
     }
-    printlog("Client socket id: %d\n", user->socket);
 
+    user->ip_address = inet_ntoa(cli_addr.sin_addr);
     user->thread_id = pthread_self();
     user->name = NULL;
     user->err_count = 0;
+
+    printlog("Client socket ip: %s\n", user->ip_address);
 
     return user;
 }

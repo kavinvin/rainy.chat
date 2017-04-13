@@ -8,7 +8,7 @@
 
 #include "websocket.h"
 
-int serve(char *host, char *port);
+int serveRainyChat(char *host, char *port);
 void parseAddr(int argc, char *argv[], char **host, char **port);
 List *newList(void);
 int initMutex(int count, ...);

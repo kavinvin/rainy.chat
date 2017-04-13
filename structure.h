@@ -14,6 +14,7 @@ struct room_t;
 
 struct user_t {
     char *name;
+    char *ip_address;
     int socket;
     pthread_t thread_id;
     int err_count;

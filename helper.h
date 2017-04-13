@@ -21,6 +21,7 @@ char * slice(char *string, int stop);
 char * rstrip(char *string, char stripper);
 void printBits(size_t const size, void const * const ptr);
 void strLower(char *string);
+uint64_t ntohl64(uint64_t value);
 void printlog(char *format, ...);
 
 #endif
