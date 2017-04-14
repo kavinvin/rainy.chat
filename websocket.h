@@ -24,6 +24,7 @@ int wsSend(Node *this, http_frame *frame);
 int wsRecv(Node *this, http_frame *frame);
 void broadcast(List *all_users, Node *this, char *message, int flag);
 int sendMessage(Node *cursor, void *message);
+void sendStatus(List *all_users);
 void removeNode(List *list, Node *this);
 void removeUser(User *user);
 

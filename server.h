@@ -19,7 +19,6 @@ char *getMessage(List *all_users, Node *this, http_frame *message);
 void *initRecvSession(void *user_param);
 void *initServerSession(void *server_socket_param);
 int readMessage(List *all_users, Node *this, char *message);
-void sendStatus(List *all_users);
 void clientRequest(List *all_users, Node *this, char *command);
 void serverCommand(int *server_socket, char *command);
 

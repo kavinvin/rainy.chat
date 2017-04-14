@@ -256,9 +256,40 @@ int sendMessage(Node *this, void *frame_void) {
     return 0;
 }
 
+void sendStatus(List *all_users) {
+    json_t *json, *username, *username_list;
+    json_error_t json_err;
+    User *user;
+    char *message;
+
+    if (all_users->len == 0) {
+        return;
+    }
+
+    username_list = json_array();
+    Node *cursor = all_users->head;
+
+    for (int i=all_users->len; i>0; i--) {
+        user = (User*)cursor->data;
+        username = json_string(user->name);
+        json_array_append(username_list, username);
+        cursor = cursor->next;
+    }
+
+    json = json_pack("{s:s, s:i, s:o}", "type", "online",
+                                        "count", all_users->len,
+                                        "users", username_list);
+    message = json_dumps(json, JSON_COMPACT);
+    printf("%s\n", message);
+    broadcast(all_users, cursor, message, ALL);
+    free(json);
+    free(message);
+}
+
 void removeNode(List *list, Node *this) {
     removeUser(this->data);
     delete(list, this);
+    sendStatus(list);
 }
 
 void removeUser(User *user) {
