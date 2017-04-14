@@ -22,8 +22,8 @@ int openHandshake(int server_socket);
 Header *newHeader();
 int wsSend(Node *this, http_frame *frame);
 int wsRecv(Node *this, http_frame *frame);
-void printname(Node *cursor, void *none);
-int broadcast(Node *cursor, void *message);
+void broadcast(List *all_users, Node *this, char *message, int flag);
+int sendMessage(Node *cursor, void *message);
 void removeNode(List *list, Node *this);
 void removeUser(User *user);
 

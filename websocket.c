@@ -235,12 +235,19 @@ int wsRecv(Node *this, http_frame *frame) {
     return SUCCESS;
 }
 
-void printname(Node *cursor, void *none) {
-    User *user = (User*)(cursor->data);
-    printlog("%s\n", user->name);
+void broadcast(List *all_users, Node *this, char *message, int flag) {
+    http_frame frame;
+    memset(&frame, 0, sizeof(frame));
+    frame.opcode = 129;
+    frame.message = message;
+    frame.size = strlen(frame.message);
+    if (map(this, sendMessage, &frame, flag) < 0) {
+        removeNode(all_users, this);
+        pthread_exit(NULL);
+    }
 }
 
-int broadcast(Node *this, void *frame_void) {
+int sendMessage(Node *this, void *frame_void) {
     User *user = (User*)(this->data);
     http_frame *frame = (http_frame*)frame_void;
     if (wsSend(this, frame) < 0) {

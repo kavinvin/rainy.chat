@@ -172,27 +172,16 @@ void *initRecvSession(void *param) {
     // append user node to chatroom
     append(all_users, this);
 
+    // send online status
+    sendStatus(all_users);
+
     while (1) {
         // receive message from client
         message = getMessage(all_users, this, &frame);
 
         // send json to client
-        memset(&frame, 0, sizeof(frame));
-        frame.opcode = 129;
-        frame.message = message;
-        frame.size = strlen(frame.message);
-
-        // protect from receiving message more than 1200 characters
-        if (frame.size > 10000) {
-            removeNode(all_users, this);
-            pthread_exit(NULL);
-        }
-
-        if (map(this, broadcast, &frame) < 0) {
-            removeNode(all_users, this);
-            pthread_exit(NULL);
-        }
-        free(frame.message);
+        broadcast(all_users, this, message, OTHER);
+        free(message);
     }
 
     removeNode(all_users, this);
@@ -281,7 +270,9 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     readMessage(all_users, this, frame->message); // mutex
 
     // build json
-    json = json_pack("{s:s, s:s}", "username", user->name, "message", frame->message);
+    json = json_pack("{s:s, s:s, s:s}", "type", "message",
+                                        "username", user->name,
+                                        "message", frame->message);
     message = json_dumps(json, JSON_COMPACT);
     free(json);
     free(frame->message);
@@ -315,6 +306,33 @@ int readMessage(List *all_users, Node *this, char *message) {
         printlog("Here is the message from no.%d: %s\n", user->socket, message);
         return 1;
     }
+}
+
+void sendStatus(List *all_users) {
+    json_t *json, *username, *username_list;
+    json_error_t json_err;
+    User *user;
+    char *message;
+
+    username_list = json_array();
+    Node *cursor = all_users->head;
+
+    for (int i=all_users->len; i>0; i--) {
+        user = (User*)cursor->data;
+        username = json_string(user->name);
+        json_array_append(username_list, username);
+        cursor = cursor->next;
+    }
+
+    json = json_pack("{s:s, s:i, s:o}", "type", "online",
+                                        "count", all_users->len,
+                                        "users", username_list);
+    message = json_dumps(json, JSON_COMPACT);
+    printf("%s\n", message);
+    broadcast(all_users, cursor, message, ALL);
+    // free(json);
+    // free(message);
+
 }
 
 /**

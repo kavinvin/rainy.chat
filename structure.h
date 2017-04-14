@@ -10,6 +10,10 @@
 #ifndef STRUCTURE_H_
 #define STRUCTURE_H_
 
+#define ALL 0
+#define SELF 1
+#define OTHER 2
+
 typedef struct {
     char *get;
     char *upgrade;
@@ -64,7 +68,7 @@ typedef int (*callback)(Node *data, void *argument);
 Node * create(void *data);
 Node * append(List *list, Node *new_node);
 Node * delete(List *list, Node *this);
-int map(Node *head, callback function, void *argument);
+int map(Node *head, callback function, void *argument, int flag);
 
 pthread_mutex_t mutex_log;
 

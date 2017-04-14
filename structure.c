@@ -118,14 +118,30 @@ Node * delete(List *list, Node *this) {
  *   apply a function to all items except the given node
  *   return 0 if success, -1 if failed
  */
-int map(Node *this, callback function, void *argument) {
-    Node *cursor = this->next;
-    User *user = (User*)cursor->data;
-    while (cursor != this && cursor != NULL) {
+int map(Node *this, callback function, void *argument, int flag) {
+    Node *cursor = this;
+    if (flag == ALL) {
+        // to all node in the list
+        do {
+            if (function(cursor, argument) < 0) {
+                return -1;
+            }
+            cursor = cursor->next;
+        } while (cursor != this && cursor != NULL);
+    } else if (flag == SELF) {
+        // only to self
         if (function(cursor, argument) < 0) {
             return -1;
         }
+    } else if (flag == OTHER) {
+        // to other node in the list
         cursor = cursor->next;
+        while (cursor != this && cursor != NULL) {
+            if (function(cursor, argument) < 0) {
+                return -1;
+            }
+            cursor = cursor->next;
+        }
     }
     return 0;
 }
