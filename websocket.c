@@ -217,7 +217,7 @@ int wsRecv(Node *this, http_frame *frame) {
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
 
-    if (frame->size > 8000) {
+    if (frame->size >= 8192) {
         printlog("Message too long\n");
         return MESSAGE_TOO_LONG;
     }
