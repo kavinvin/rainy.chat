@@ -6,7 +6,7 @@
 #include "socket.h"
 
 int initSocket(char *host, char *port) {
-    int server_socket, state;
+    int server_socket, state, option=1;
     struct sockaddr_in server_address;
 
     // create socket
@@ -16,6 +16,8 @@ int initSocket(char *host, char *port) {
         printlog("ERROR on opening socket: %s\n", strerror(errno));
         return -1;
     }
+
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     // create server address structure
     memset(&server_address, 0, sizeof(server_address));

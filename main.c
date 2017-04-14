@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     parseAddr(argc, argv, &host, &port);
 
     // start chat application
-    serve(host, port);
+    serveRainyChat(host, port);
 
     return 0;
 }

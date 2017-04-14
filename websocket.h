@@ -17,12 +17,14 @@ typedef struct {
     char *message; // x bytes
 } http_frame;
 
-char * get_handshake_key(char *str);
-int open_handshake(int server_socket);
+char * getHandshakeKey(char *str);
+int openHandshake(int server_socket);
+Header *newHeader();
 int wsSend(Node *this, http_frame *frame);
 int wsRecv(Node *this, http_frame *frame);
-void printname(Node *cursor, void *none);
-void broadcast(Node *cursor, void *frame);
+void broadcast(List *all_users, Node *this, char *message, int flag);
+int sendMessage(Node *cursor, void *message);
+void sendStatus(List *all_users);
 void removeNode(List *list, Node *this);
 void removeUser(User *user);
 

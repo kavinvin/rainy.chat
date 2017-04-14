@@ -7,6 +7,9 @@
 #include "helper.h"
 
 void sig_handler(int sig) {
+    if (sig == SIGSEGV) {
+        printlog("Segmentation fault\n");
+    }
     if (sig == SIGINT || sig == SIGSEGV) {
         // free memory
         // if (l != NULL) {
@@ -14,7 +17,8 @@ void sig_handler(int sig) {
         //     l = NULL;
         // }
         signal(sig, SIG_DFL);
-        printlog("\nexiting...\n");
+        printlog("\nFreeing memory...\n");
+        printlog("Exiting...\n");
         exit(0);
     } else if (sig == SIGPIPE) {
         signal(sig, SIG_IGN);

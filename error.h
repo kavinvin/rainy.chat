@@ -11,6 +11,7 @@
 #define SUCCESS 0
 #define CLIENT_DISCONNECT 1
 #define INVALID_HEADER 2
+#define MESSAGE_TOO_LONG 3
 
 void sig_handler(int signal);
 
