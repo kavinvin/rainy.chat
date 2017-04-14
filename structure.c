@@ -6,6 +6,12 @@
 
 #include "structure.h"
 
+/**
+ * Function: create
+ * ----------------------------
+ *   create new node linked to null
+ *   return new node
+ */
 Node * create(void *data) {
     Node *new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
@@ -20,7 +26,14 @@ Node * create(void *data) {
     return new_node;
 }
 
+/**
+ * Function: append
+ * ----------------------------
+ *   append new node to the given list
+ *   return new node
+ */
 Node * append(List *list, Node *this) {
+    printlog("Adding user...\n");
     pthread_mutex_lock(&list->lock);
     if (list->len == 0) {
         // link to self
@@ -28,7 +41,7 @@ Node * append(List *list, Node *this) {
         this->prev = this;
         this->attached = 1;
         list->len++;
-        printlog("user online: %d\n", list->len);
+        printlog("User online: %d\n", list->len);
         list->head = this;
         pthread_mutex_unlock(&list->lock);
         return this;
@@ -48,13 +61,20 @@ Node * append(List *list, Node *this) {
     this->attached = 1;
     pthread_mutex_unlock(&first->lock);
     if (list->len > 2) pthread_mutex_unlock(&last->lock);
-    printlog("user online: %d\n", list->len);
+    printlog("User online: %d\n", list->len);
     return this;
 }
 
+/**
+ * Function: delete
+ * ----------------------------
+ *   remove selected node from the given list
+ *   return next available node
+ */
 Node * delete(List *list, Node *this) {
+    printlog("Removing user...\n");
     if (!this->attached) {
-        // node detached is in detached state
+        // node to be delete is in alredy in detached state
         pthread_mutex_destroy(&this->lock);
         free(this);
         return NULL;
@@ -75,8 +95,8 @@ Node * delete(List *list, Node *this) {
     next->prev = prev;
     this->next = NULL;
     this->prev = NULL;
+    // decrement length
     list->len--;
-    // decrement len
     if (list->len == 0) {
         // assign null pointer to head
         list->head = NULL;
@@ -88,10 +108,16 @@ Node * delete(List *list, Node *this) {
     pthread_mutex_destroy(&this->lock);
     // destroy mutex
     free(this);
-    printlog("user online: %d\n", list->len);
+    printlog("User online: %d\n", list->len);
     return next;
 }
 
+/**
+ * Function: map
+ * ----------------------------
+ *   apply a function to all items except the given node
+ *   return 0 if success, -1 if failed
+ */
 int map(Node *this, callback function, void *argument) {
     Node *cursor = this->next;
     User *user = (User*)cursor->data;

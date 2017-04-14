@@ -7,6 +7,9 @@
 #include "helper.h"
 
 void sig_handler(int sig) {
+    if (sig == SIGSEGV) {
+        printlog("Segmentation fault\n");
+    }
     if (sig == SIGINT || sig == SIGSEGV) {
         // free memory
         // if (l != NULL) {

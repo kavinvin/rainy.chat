@@ -149,13 +149,11 @@ void *initRecvSession(void *param) {
     char *message;
     http_frame frame;
 
-    printlog("Creating new thread\n");
-
     // accept new user and unlock mutex
     user = acceptUser(server_socket);
 
     // web browser handshaking
-    if (open_handshake(user->socket) < 0) {
+    if (openHandshake(user->socket) < 0) {
         removeUser(user);
         pthread_exit(NULL);
     }
@@ -222,7 +220,7 @@ User *acceptUser(int server_socket) {
     user->socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen);
     pthread_mutex_unlock(&mutex_accept);
 
-    printlog("Accepting client\n");
+    printlog("-- Accepting client --\n");
     if (user->socket < 0) {
         printlog("Error on accepting: %s\n", strerror(errno));
         free(user);
@@ -257,7 +255,7 @@ int validateUser(Node *this, http_frame *frame) {
     }
     json = json_loads(frame->message, 0, &json_err);
     json_unpack(json, "{s:s}", "username", &user->name);
-    printf("username%s\n", user->name);
+    printf("Username: %s\n", user->name);
     free(frame->message);
     free(json);
     return 0;

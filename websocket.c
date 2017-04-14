@@ -5,7 +5,13 @@
 
 #include "websocket.h"
 
-char * get_handshake_key(char *str) {
+/**
+ * Function: getHandshakeKey
+ * ----------------------------
+ *   compute |Sec-WebSocket-Accept| header field
+ *   return base64-encoded sha1 of the given string
+ */
+char * getHandshakeKey(char *str) {
     unsigned char hash[SHA_DIGEST_LENGTH];
     char magic[80], *encoded;
     size_t input_length = 20, output_length;
@@ -18,39 +24,81 @@ char * get_handshake_key(char *str) {
     return encoded;
 }
 
-int open_handshake(int server_socket) {
-    char cli_handshake[BUFFERSIZE], serv_handshake[300], *hkey, *hvalue, *part, *sec_ws_key, *sec_ws_accept;
-    int state;
+/**
+ * Function: openHandshake
+ * ----------------------------
+ *   recieve handshake message from client and return them
+ *   the corresponding header field
+ *   return 1 if success, -1 if failed
+ */
+int openHandshake(int server_socket) {
+    char buffer[BUFFERSIZE], serv_handshake[300], *token, *string, *sec_ws_accept;
+    Header *header = newHeader();
+    int length, state;
 
     printlog("-- Handshaking-- \n");
 
     // receive message from the client to buffer
-    memset(&cli_handshake, 0, sizeof(cli_handshake));
-    if (recv(server_socket, cli_handshake, BUFFERSIZE, 0) < 0) {
+    memset(&buffer, 0, sizeof(buffer));
+    if ( (length = recv(server_socket, buffer, BUFFERSIZE, 0)) < 0 ) {
         printlog("Handshaking failed\n");
         close(server_socket);
         return -1;
     }
 
-    part = strtok(cli_handshake, "\r");
-    while (1) {
-        hkey = strtok(NULL, "\r\n ");
-        if (hkey == NULL) {
-            break;
+    string = calloc(length+1, 1);
+    strncpy(string, buffer, length);
+
+    token = strtok(string, "\r\n");
+    header->get = token;
+    if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
+        printlog("Invalid header\n");
+        return -1;
+    }
+
+    while (token != NULL) {
+        if (strncasecmp("Upgrade: ", token, 9) == 0) {
+            // Upgrade
+            header->upgrade = token+9;
+            printlog("-> Upgrade: %s\n", header->upgrade);
+        } else if (strncasecmp("Connection: ", token, 12) == 0) {
+            // connection
+            header->connection = token+12;
+            printlog("-> Connection: %s\n", header->connection);
+        } else if (strncasecmp("Host: ", token, 6) == 0) {
+            // host
+            header->host = token+6;
+            printlog("-> Host: %s\n", header->host);
+        } else if (strncasecmp("Origin: ", token, 8) == 0) {
+            // origin
+            header->origin = token+8;
+            printlog("-> Origin: %s\n", header->origin);
+        } else if (strncasecmp("Sec-WebSocket-Key: ", token, 19) == 0) {
+            // key
+            header->key = token+19;
+            printlog("-> Sec-WebSocket-Key: %s\n", header->key);
+        } else if (strncasecmp("Sec-WebSocket-Version: ", token, 23) == 0) {
+            // version
+            header->version = strtol(token+23, (char**)NULL, 10);
+            printlog("-> Sec-WebSocket-Version: %d\n", header->version);
+        } else if (strncasecmp("Sec-WebSocket-Extensions: ", token, 26) == 0) {
+            // extensions
+            header->extension = token+26;
+            printlog("-> Sec-WebSocket-Extensions: %s\n", header->extension);
+        } else if (strncasecmp("Sec-WebSocket-Protocol: ", token, 24) == 0) {
+            // protocol
+            header->protocol = token+24;
+            printlog("-> Sec-WebSocket-Protocol: %s\n", header->protocol);
+        } else if (strncasecmp("User-Agent: ", token, 12) == 0) {
+            // protocol
+            header->protocol = token+12;
+            printlog("-> User-Agent: %s\n", header->protocol);
         }
-        hvalue = strtok(NULL, "\r");
-        if (strcmp(hkey, "Sec-WebSocket-Key:") == 0) {
-            sec_ws_key = hvalue;
-            printlog("Sec-WebSocket-Key: %s\n", sec_ws_key);
-        }
-        if (strcmp(hkey, "User-Agent:") == 0) {
-            printlog("User-Agent: %s\n", hvalue);
-        }
-        // printlog("%s %s\n", hkey, hvalue);
+        token = strtok(NULL, "\r\n");
     }
 
     // sha1, encode64
-    sec_ws_accept = slice(get_handshake_key(sec_ws_key), 28);
+    sec_ws_accept = slice(getHandshakeKey(header->key), 28);
 
     // compose server handshake message
     strcpy(serv_handshake, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ");
@@ -64,6 +112,24 @@ int open_handshake(int server_socket) {
 
     return 0;
 
+}
+
+Header *newHeader() {
+    Header *header = malloc(sizeof(Header));
+    if (header != NULL) {
+        header->get = NULL;
+        header->upgrade = NULL;
+        header->connection = NULL;
+        header->host = NULL;
+        header->origin = NULL;
+        header->key = NULL;
+        header->version = 0;
+        header->accept = NULL;
+        header->protocol = NULL;
+        header->extension = NULL;
+        header->agent = NULL;
+    }
+    return header;
 }
 
 int wsSend(Node *this, http_frame *frame) {

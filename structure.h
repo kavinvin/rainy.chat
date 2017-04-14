@@ -10,6 +10,20 @@
 #ifndef STRUCTURE_H_
 #define STRUCTURE_H_
 
+typedef struct {
+    char *get;
+    char *upgrade;
+    char *connection;
+    char *host;
+    char *origin;
+    char *key;
+    char *accept;
+    long version;
+    char *protocol;
+    char *extension;
+    char *agent;
+} Header;
+
 struct room_t;
 
 struct user_t {
@@ -18,7 +32,7 @@ struct user_t {
     int socket;
     pthread_t thread_id;
     int err_count;
-    // struct room_t *rooms;
+    Header header;
 };
 
 struct room_t {
@@ -40,11 +54,6 @@ typedef struct {
     int len;
     pthread_mutex_t lock;
 } List;
-
-// struct thread_shared {
-//     struct user_t *user;
-//     struct node_t *users;
-// };
 
 typedef struct user_t User;
 typedef struct room_t Room;
