@@ -51,8 +51,9 @@ int openHandshake(int server_socket) {
 
     token = strtok(string, "\r\n");
     header->get = token;
-    if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
+    if (strncasecmp("GET /", header->get, 5) != 0) {
         printlog("Invalid header\n");
+        printf("%s", buffer);
         return -1;
     }
 
