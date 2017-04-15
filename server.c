@@ -244,7 +244,17 @@ int validateUser(Node *this, http_frame *frame) {
         pthread_exit(NULL);
     }
     json = json_loads(frame->message, 0, &json_err);
+    if (json == NULL) {
+        printlog("Login error: invalid json\n");
+        removeUser(user);
+        pthread_exit(NULL);
+    }
     json_unpack(json, "{s:s}", "username", &user->name);
+    if (json == NULL) {
+        printlog("Login error: invalid username\n");
+        removeUser(user);
+        pthread_exit(NULL);
+    }
     printf("Username: %s\n", user->name);
     free(frame->message);
     free(json);
