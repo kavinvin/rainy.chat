@@ -167,7 +167,7 @@ void *initRecvSession(void *param) {
     }
 
     // validate whether a user can join a chat room
-    validateUser(this, &frame);
+    validateUser(all_users, this, &frame);
 
     // append user node to chatroom
     append(all_users, this);
@@ -233,7 +233,7 @@ User *acceptUser(int server_socket) {
  *   ask for user preriquisite before joining room
  *   return 0 if success, -1 if failied
  */
-int validateUser(Node *this, http_frame *frame) {
+int validateUser(List *all_users, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     json_t* json;
     json_error_t json_err;
@@ -246,16 +246,19 @@ int validateUser(Node *this, http_frame *frame) {
     json = json_loads(frame->message, 0, &json_err);
     if (json == NULL) {
         printlog("Login error: invalid json\n");
+        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid format\"}", SELF);
         removeUser(user);
         pthread_exit(NULL);
     }
     json_unpack(json, "{s:s}", "username", &user->name);
-    if (json == NULL) {
+    if (user->name == NULL) {
         printlog("Login error: invalid username\n");
+        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid username\"}", SELF);
         removeUser(user);
         pthread_exit(NULL);
     }
     printf("Username: %s\n", user->name);
+    broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
     free(frame->message);
     free(json);
     return 0;
