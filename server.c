@@ -167,7 +167,18 @@ void *initRecvSession(void *param) {
     }
 
     // validate whether a user can join a chat room
-    validateUser(all_users, this, &frame);
+    while (user->credit) {
+        printf("%s\n", "try to get username");
+        if (validateUser(all_users, this, &frame) == 0) {
+            break;
+        }
+        user->credit--;
+    }
+
+    if (!user->credit) {
+        removeNode(all_users, this);
+        pthread_exit(NULL);
+    }
 
     // append user node to chatroom
     append(all_users, this);
@@ -220,7 +231,7 @@ User *acceptUser(int server_socket) {
     user->ip_address = inet_ntoa(cli_addr.sin_addr);
     user->thread_id = pthread_self();
     user->name = NULL;
-    user->err_count = 0;
+    user->credit = 20;
 
     printlog("Client socket ip: %s\n", user->ip_address);
 
@@ -237,6 +248,8 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     json_t* json;
     json_error_t json_err;
+    Node *cursor;
+    User *otheruser;
 
     memset(frame, 0, sizeof(*frame));
     if (wsRecv(this, frame) != SUCCESS) {
@@ -247,16 +260,36 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
     if (json == NULL) {
         printlog("Login error: invalid json\n");
         broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid format\"}", SELF);
-        removeUser(user);
-        pthread_exit(NULL);
+        free(frame->message);
+        free(json);
+        return -1;
     }
     json_unpack(json, "{s:s}", "username", &user->name);
     if (user->name == NULL) {
-        printlog("Login error: invalid username\n");
-        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid username\"}", SELF);
-        removeUser(user);
-        pthread_exit(NULL);
+        printlog("Login error: no usernmae given\n");
+        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"No username given\"}", SELF);
+        free(frame->message);
+        free(json);
+        return -1;
     }
+
+    cursor = all_users->head;
+    if (cursor != NULL) {
+        cursor = cursor->next;
+        do {
+            otheruser = (User*)cursor->data;
+            printf("%s == %s\n", user->name, otheruser->name);
+            if (strcmp(user->name, otheruser->name) == 0) {
+                printlog("Login error: username taken\n");
+                broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Username taken\"}", SELF);
+                free(frame->message);
+                free(json);
+                return -1;
+            }
+            cursor = cursor->next;
+        } while (cursor != all_users->head);
+    }
+
     printf("Username: %s\n", user->name);
     broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
     free(frame->message);
