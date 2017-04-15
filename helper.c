@@ -81,7 +81,7 @@ uint64_t ntohl64(uint64_t value) {
 
 void printlog(char *format, ...) {
     pthread_mutex_lock(&mutex_log);
-    logfile = fopen("output/rainy.log", "a");
+    logfile = fopen("rainy.log", "a");
     va_list args;
     va_start(args, format);
     vprintf(format, args);

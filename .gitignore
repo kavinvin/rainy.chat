@@ -2,6 +2,7 @@
 Rainy.Chat
 whatever.c
 *.o
+*.log
 autom4te.cache/
 /CMakeFiles
 .DS_STORE
