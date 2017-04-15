@@ -303,7 +303,7 @@ int readMessage(List *all_users, Node *this, char *message) {
         return 0;
     } else {
         // message mode
-        printlog("Here is the message from no.%d: %s\n", user->socket, message);
+        printlog("Message received from #%d: %s (%s)\nMessage: %s\n", user->socket, user->name, user->ip_address, message);
         return 1;
     }
 }

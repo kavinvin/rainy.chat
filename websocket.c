@@ -165,7 +165,7 @@ int wsSend(Node *this, http_frame *frame) {
         printlog("%s\n", "Error on sending message");
         return -1;
     }
-    printlog("Message sent to: %d\n", user->socket);
+    printlog("Message sent to #%d: %s (%s)\n", user->socket, user->name, user->ip_address);
     return 0;
 }
 
@@ -260,6 +260,7 @@ void sendStatus(List *all_users) {
     json_t *json, *username, *username_list;
     json_error_t json_err;
     User *user;
+    Node *cursor;
     char *message;
 
     if (all_users->len == 0) {
@@ -267,14 +268,14 @@ void sendStatus(List *all_users) {
     }
 
     username_list = json_array();
-    Node *cursor = all_users->head;
+    cursor = all_users->head;
 
-    for (int i=all_users->len; i>0; i--) {
+    do {
         user = (User*)cursor->data;
         username = json_string(user->name);
         json_array_append(username_list, username);
         cursor = cursor->next;
-    }
+    } while (cursor != all_users->head);
 
     json = json_pack("{s:s, s:i, s:o}", "type", "online",
                                         "count", all_users->len,
