@@ -207,14 +207,15 @@ User *acceptUser(int server_socket) {
 
     // accept incoming request, create new client socket
     user->socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen);
-    pthread_mutex_unlock(&mutex_accept);
-
-    printlog("-- Accepting client --\n");
     if (user->socket < 0) {
         printlog("Error on accepting: %s\n", strerror(errno));
         free(user);
-        pthread_exit(NULL);
+        exit(1);
     }
+    pthread_mutex_unlock(&mutex_accept);
+
+    printlog("-- Accepting client --\n");
+
 
     user->ip_address = inet_ntoa(cli_addr.sin_addr);
     user->thread_id = pthread_self();
