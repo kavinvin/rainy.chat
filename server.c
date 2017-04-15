@@ -270,9 +270,10 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     readMessage(all_users, this, frame->message); // mutex
 
     // build json
-    json = json_pack("{s:s, s:s, s:s}", "type", "message",
-                                        "username", user->name,
-                                        "message", frame->message);
+    json = json_pack("{s:i, s:s, s:s, s:s}", "id", user->socket,
+                                             "type", "message",
+                                             "username", user->name,
+                                             "message", frame->message);
     message = json_dumps(json, JSON_COMPACT);
     free(json);
     free(frame->message);
