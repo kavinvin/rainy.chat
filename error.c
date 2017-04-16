@@ -11,11 +11,6 @@ void sig_handler(int sig) {
         printlog("Segmentation fault\n");
     }
     if (sig == SIGINT || sig == SIGSEGV) {
-        // free memory
-        // if (l != NULL) {
-        //     list_free(l);
-        //     l = NULL;
-        // }
         signal(sig, SIG_DFL);
         printlog("\nFreeing memory...\n");
         printlog("Exiting...\n");

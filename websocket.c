@@ -53,7 +53,7 @@ int openHandshake(int server_socket) {
     header->get = token;
     if (strncasecmp("GET /", header->get, 5) != 0) {
         printlog("Invalid header\n");
-        printf("%s", buffer);
+        printlog("%s", buffer);
         return -1;
     }
 
@@ -170,7 +170,6 @@ int wsSend(Node *this, http_frame *frame) {
         printlog("%s\n", "Error on sending message");
         return -1;
     }
-    printlog("Message sent to #%d: %s (%s)\n", user->socket, user->name, user->ip_address);
     return 0;
 }
 
@@ -231,8 +230,6 @@ int wsRecv(Node *this, http_frame *frame) {
     memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
 
-    // printf("expected msg len: %llu\n", frame->size);
-
     // remove mask from data
     for (uint64_t i=0; i<frame->size; i++){
         frame->message[i] = frame->message[i] ^ frame->mask[i % 4];
@@ -288,19 +285,13 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
                      "users", username_list);
 
     if (added_user != NULL) {
-        printf("%s\n", added_user->name);
-        if (json_object_set_new(json, "added", json_string(added_user->name)) < 0) {
-            printf("%s\n", "error set added user\n");
-        }
+        json_object_set_new(json, "added", json_string(added_user->name));
     }
     if (removed_user != NULL) {
-        if (json_object_set_new(json, "removed", json_string(removed_user->name)) < 0) {
-            printf("%s\n", "error set added user\n");
-        }
+        json_object_set_new(json, "removed", json_string(removed_user->name));
     }
 
     message = json_dumps(json, JSON_COMPACT);
-    printf("%s\n", message);
     broadcast(all_users, cursor, message, ALL);
     free(message);
 }

@@ -47,9 +47,10 @@ void parseAddr(int argc, char *argv[], char **host, char **port) {
     if (argc <= 1) {
         *host = calloc(1, 20); // *memory leaked
         *port = calloc(1, 10); // *memory leaked
-        fputs("host: ", stdout);
+        fputs("Please specify host and port to serve Rainy.Chat\n", stdout);
+        fputs("Host: ", stdout);
         fgets(*host, 20, stdin);
-        fputs("port: ", stdout);
+        fputs("Port: ", stdout);
         fgets(*port, 10, stdin);
     //  get host and port from argument
     } else {
@@ -168,7 +169,6 @@ void *initRecvSession(void *param) {
 
     // validate whether a user can join a chat room
     while (user->credit) {
-        printf("%s\n", "try to get username");
         if (validateUser(all_users, this, &frame) == 0) {
             break;
         }
@@ -277,7 +277,6 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
     if (cursor != NULL) {
         do {
             otheruser = (User*)cursor->data;
-            printf("%s == %s\n", user->name, otheruser->name);
             if (strcmp(user->name, otheruser->name) == 0) {
                 printlog("Login error: username taken\n");
                 broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Username taken\"}", SELF);
@@ -289,7 +288,6 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
         } while (cursor != all_users->head);
     }
 
-    printf("Username: %s\n", user->name);
     broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
     free(json);
     free(frame->message);
@@ -351,7 +349,7 @@ int readMessage(List *all_users, Node *this, char *message) {
         return 0;
     } else {
         // message mode
-        printlog("Message received from #%d: %s (%s)\nMessage: %s\n", user->socket, user->name, user->ip_address, message);
+        printlog("Message received from #%d: %s\n", user->socket, user->name);
         return 1;
     }
 }
