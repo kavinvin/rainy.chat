@@ -1,7 +1,9 @@
 /**
-  @file  websocket.h
-  @brief A header file include websocket function
-*/
+ * File: websocket.c
+ * ----------------------------
+ *   an executable file of websocket function which serve interface
+ *   between browser and raw socket
+ */
 
 #include "websocket.h"
 

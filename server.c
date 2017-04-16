@@ -1,14 +1,16 @@
 /**
-  @file  server.c
-  @brief Instant messaging API
-*/
+ * File: server.c
+ * ----------------------------
+ *   an executable file of main functionalities
+ */
 
 #include "server.h"
 
 /**
- * Function: serve
+ * Function: serveRainyChat
  * ----------------------------
- *   start chat application server
+ *   serveRainyChat(host, port)
+ *   start chat application server on the given host and port
  *   return 0 if success, -1 if failed
  */
 int serveRainyChat(char *host, char *port) {
@@ -39,11 +41,12 @@ int serveRainyChat(char *host, char *port) {
 /**
  * Function: parseAddr
  * ----------------------------
- *   parse command line argument for host and port
+ *   parse host and port information from command line argument
  *   if not found, request them from stdin
+ *   return void
  */
 void parseAddr(int argc, char *argv[], char **host, char **port) {
-    // ask for host and port
+    // ask for host and port if argument not found
     if (argc <= 1) {
         *host = calloc(1, 20); // *memory leaked
         *port = calloc(1, 10); // *memory leaked
@@ -63,20 +66,20 @@ void parseAddr(int argc, char *argv[], char **host, char **port) {
  * Function: newList
  * ----------------------------
  *   create double-circular linked list structure
- *   return List pointer
+ *   return new list pointer
  */
 List *newList(void) {
-    List *userList;
-    userList = malloc(sizeof(userList));
-    userList->len = 0;
-    userList->head = NULL;
-    return userList;
+    List *list;
+    list = malloc(sizeof(list));
+    list->len = 0;
+    list->head = NULL;
+    return list;
 }
 
 /**
  * Function: initMutex
  * ----------------------------
- *   init all given mutex
+ *   init all of the given mutex
  *   return 0 if success, -1 if failed
  */
 int initMutex(int count, ...) {
@@ -95,7 +98,7 @@ int initMutex(int count, ...) {
 /**
  * Function: forkService
  * ----------------------------
- *   repeatedly create new thread for every client
+ *   create new thread for each new client
  *   return void
  */
 void forkService(int server_socket, List *all_users) {
@@ -143,10 +146,11 @@ void *initRecvSession(void *param) {
     int server_socket = args->server_socket;
     List *all_users = args->list;
 
-    // user struct
+    // users list structure
     User *user;
     Node *this;
 
+    // message buffer for communication
     char *message;
     http_frame frame;
 
@@ -159,7 +163,7 @@ void *initRecvSession(void *param) {
         pthread_exit(NULL);
     }
 
-    // create new user node if handshaking success
+    // create new user node
     this = create(user);
     if (this == NULL) {
         printlog("Error on creating node\n");
@@ -175,22 +179,24 @@ void *initRecvSession(void *param) {
         user->credit--;
     }
 
+    // check user remaining credit
+    // if less than 0, cut the connection
     if (!user->credit) {
         removeNode(all_users, this);
         pthread_exit(NULL);
     }
 
-    // append user node to chatroom
+    // append user to chatroom
     append(all_users, this);
 
-    // send online status
+    // send online status to all user
     sendStatus(all_users, user, NULL);
 
     while (1) {
-        // receive message from client
+        // receive message from the user
         message = getMessage(all_users, this, &frame);
 
-        // send json to client
+        // broadcast message to all users
         broadcast(all_users, this, message, OTHER);
         free(message);
     }
@@ -223,17 +229,16 @@ User *acceptUser(int server_socket) {
         free(user);
         exit(1);
     }
-    pthread_mutex_unlock(&mutex_accept);
 
+    // unlock mutex, ready for new client
+    pthread_mutex_unlock(&mutex_accept);
     printlog("-- Accepting client --\n");
 
-
+    // set up default attibute
     user->ip_address = inet_ntoa(cli_addr.sin_addr);
     user->thread_id = pthread_self();
     user->name = NULL;
     user->credit = 20;
-
-    printlog("Client socket ip: %s\n", user->ip_address);
 
     return user;
 }
@@ -251,11 +256,14 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
     Node *cursor;
     User *otheruser;
 
+    // recieve login information
     memset(frame, 0, sizeof(*frame));
     if (wsRecv(this, frame) != SUCCESS) {
         removeUser(user);
         pthread_exit(NULL);
     }
+
+    // extract json string to a structure
     json = json_loads(frame->message, 0, &json_err);
     if (json == NULL) {
         printlog("Login error: invalid json\n");
@@ -264,6 +272,8 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
         free(frame->message);
         return -1;
     }
+
+    // extract username from json
     json_unpack(json, "{s:s}", "username", &user->name);
     if (user->name == NULL) {
         printlog("Login error: no usernmae given\n");
@@ -273,6 +283,7 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
         return -1;
     }
 
+    // check if the username has been taken
     cursor = all_users->head;
     if (cursor != NULL) {
         do {
@@ -288,6 +299,7 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
         } while (cursor != all_users->head);
     }
 
+    // notify all users of the new user
     broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
     free(json);
     free(frame->message);
@@ -306,6 +318,7 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     json_t *json;
     json_error_t json_err;
 
+    // receive message from user
     memset(frame, 0, sizeof(*frame));
     if (wsRecv(this, frame) != SUCCESS) {
         removeNode(all_users, this);
@@ -313,7 +326,7 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     };
     readMessage(all_users, this, frame->message); // mutex
 
-    // build json
+    // prepare broadcasting data to all users in the room
     json = json_pack("{s:i, s:s, s:s, s:s}",
                      "id", user->socket,
                      "type", "message",
@@ -325,6 +338,12 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     return message;
 }
 
+/**
+ * Function: initServerSession
+ * ----------------------------
+ *   listen for server command
+ *   return void
+ */
 void *initServerSession(void *server_socket_param) {
     int *server_socket = (int*)server_socket_param;
     char command[20];
@@ -336,7 +355,7 @@ void *initServerSession(void *server_socket_param) {
 }
 
 /**
- * Function: parseMessage
+ * Function: readMessage
  * ----------------------------
  *   read a message received from client
  *   return 0 if it's a command, 1 if it's a text message
@@ -370,6 +389,12 @@ void clientRequest(List *all_users, Node *this, char *command) {
     }
 }
 
+/**
+ * Function: serverCommand
+ * ----------------------------
+ *   search for available command for the server
+ *   return void
+ */
 void serverCommand(int *server_socket, char *command) {
     printlog("got command\n");
     if (strcmp(command, "/exit\n") == 0) {

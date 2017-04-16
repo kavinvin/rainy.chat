@@ -1,6 +1,8 @@
 /**
-  @file  base64.h
-*/
+ * File: base64.h
+ * ----------------------------
+ *   a header file of base64.c
+ */
 
 #include "includes.h"
 

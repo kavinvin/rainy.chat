@@ -1,6 +1,8 @@
 /**
-  @file  base64.c
-*/
+ * File: base64.c
+ * ----------------------------
+ *   base64-encoding library
+ */
 
 #include "base64.h"
 

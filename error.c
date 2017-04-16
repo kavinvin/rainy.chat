@@ -1,7 +1,8 @@
 /**
-  @file  server.c
-  @brief Instant messaging API
-*/
+ * File: error.c
+ * ----------------------------
+ *   define error and signal handler
+ */
 
 #include "error.h"
 #include "helper.h"

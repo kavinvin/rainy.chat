@@ -1,8 +1,8 @@
 /**
-  @file  includes.h
-  @brief A header file to apply common interface and language between
-         the client and a server sides.
-*/
+ * File: includes.h
+ * ----------------------------
+ *   includes all dependencies
+ */
 
 #ifndef INCLUDES_H_
 #define INCLUDES_H_

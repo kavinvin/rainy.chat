@@ -1,7 +1,8 @@
 /**
-  @file  socket.c
-  @brief A header file include server socket
-*/
+ * File: socket.c
+ * ----------------------------
+ *   function of raw socket communication
+ */
 
 #include "socket.h"
 

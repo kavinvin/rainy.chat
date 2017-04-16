@@ -1,7 +1,8 @@
 /**
-  @file  server.h
-  @brief Instant messaging API
-*/
+ * File: error.h
+ * ----------------------------
+ *   a header file of error.c
+ */
 
 #ifndef ERROR_H_
 #define ERROR_H_

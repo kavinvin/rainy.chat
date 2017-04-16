@@ -1,7 +1,8 @@
 /**
-  @file  server.h
-  @brief Instant messaging API
-*/
+ * File: server.h
+ * ----------------------------
+ *   a header file of server.c
+ */
 
 #ifndef SERVER_H_
 #define SERVER_H_

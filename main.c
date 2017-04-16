@@ -1,4 +1,8 @@
-#include <stdio.h>
+/**
+ * File: main.c
+ * ----------------------------
+ *   everything starts here
+ */
 #include "server.h"
 
 int main(int argc, char *argv[])
