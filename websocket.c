@@ -98,6 +98,10 @@ int openHandshake(int server_socket) {
         token = strtok(NULL, "\r\n");
     }
 
+    if (header->key == NULL) {
+        return -1;
+    }
+
     // sha1, encode64
     sec_ws_accept = slice(getHandshakeKey(header->key), 28);
 
