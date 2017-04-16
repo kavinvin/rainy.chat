@@ -275,7 +275,6 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
 
     cursor = all_users->head;
     if (cursor != NULL) {
-        cursor = cursor->next;
         do {
             otheruser = (User*)cursor->data;
             printf("%s == %s\n", user->name, otheruser->name);
