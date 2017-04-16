@@ -184,7 +184,7 @@ void *initRecvSession(void *param) {
     append(all_users, this);
 
     // send online status
-    sendStatus(all_users);
+    sendStatus(all_users, user, NULL);
 
     while (1) {
         // receive message from client
@@ -260,16 +260,16 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
     if (json == NULL) {
         printlog("Login error: invalid json\n");
         broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid format\"}", SELF);
-        free(frame->message);
         free(json);
+        free(frame->message);
         return -1;
     }
     json_unpack(json, "{s:s}", "username", &user->name);
     if (user->name == NULL) {
         printlog("Login error: no usernmae given\n");
         broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"No username given\"}", SELF);
-        free(frame->message);
         free(json);
+        free(frame->message);
         return -1;
     }
 
@@ -282,8 +282,8 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
             if (strcmp(user->name, otheruser->name) == 0) {
                 printlog("Login error: username taken\n");
                 broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Username taken\"}", SELF);
-                free(frame->message);
                 free(json);
+                free(frame->message);
                 return -1;
             }
             cursor = cursor->next;
@@ -292,8 +292,8 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
 
     printf("Username: %s\n", user->name);
     broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
-    free(frame->message);
     free(json);
+    free(frame->message);
     return 0;
 }
 
@@ -306,7 +306,7 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
 char *getMessage(List *all_users, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     char *message;
-    json_t* json;
+    json_t *json;
     json_error_t json_err;
 
     memset(frame, 0, sizeof(*frame));
@@ -317,10 +317,11 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     readMessage(all_users, this, frame->message); // mutex
 
     // build json
-    json = json_pack("{s:i, s:s, s:s, s:s}", "id", user->socket,
-                                             "type", "message",
-                                             "username", user->name,
-                                             "message", frame->message);
+    json = json_pack("{s:i, s:s, s:s, s:s}",
+                     "id", user->socket,
+                     "type", "message",
+                     "username", user->name,
+                     "message", frame->message);
     message = json_dumps(json, JSON_COMPACT);
     free(json);
     free(frame->message);
