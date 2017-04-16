@@ -248,7 +248,7 @@ int wsRecv(Node *this, http_frame *frame) {
     }
 
     // restrict message length
-    if (frame->size >= 1200) {
+    if (frame->size > 1200) {
         printlog("Message too long\n");
         return MESSAGE_TOO_LONG;
     }
