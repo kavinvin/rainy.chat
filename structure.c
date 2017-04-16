@@ -107,9 +107,8 @@ Node * delete(List *list, Node *this) {
     if (list->len > 1) pthread_mutex_unlock(&prev->lock);
     pthread_mutex_destroy(&this->lock);
     // destroy mutex
-    free(this);
     printlog("User online: %d\n", list->len);
-    return next;
+    return this;
 }
 
 /**

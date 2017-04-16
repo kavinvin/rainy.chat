@@ -302,9 +302,10 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
 }
 
 void removeNode(List *list, Node *this) {
+    delete(list, this);
     sendStatus(list, NULL, this->data);
     removeUser(this->data);
-    delete(list, this);
+    free(this);
 }
 
 void removeUser(User *user) {
