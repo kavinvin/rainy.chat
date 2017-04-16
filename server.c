@@ -19,8 +19,8 @@ int serveRainyChat(char *host, char *port) {
     printlog("-- Server started --\n");
 
     // create CTRL-C and Segmentation faults signal handler
-    signal(SIGINT, &sig_handler);
-    signal(SIGSEGV, &sig_handler);
+    signal(SIGINT, &signalHandler);
+    signal(SIGSEGV, &signalHandler);
 
     // create server socket
     server_socket = initSocket(host, port);

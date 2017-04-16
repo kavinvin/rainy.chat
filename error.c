@@ -7,7 +7,13 @@
 #include "error.h"
 #include "helper.h"
 
-void sig_handler(int sig) {
+/**
+ * Function: signalHandler
+ * ----------------------------
+ *   CTRL-C and Segmentation faults signal handler
+ *   return void
+ */
+void signalHandler(int sig) {
     if (sig == SIGSEGV) {
         printlog("Segmentation fault\n");
     }

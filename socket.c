@@ -6,6 +6,13 @@
 
 #include "socket.h"
 
+/**
+ * Function: initSocket
+ * ----------------------------
+ *   initSocket(host, port)
+ *   create server socket
+ *   return socket descriptor, -1 if failed to create socket
+ */
 int initSocket(char *host, char *port) {
     int server_socket, state, option=1;
     struct sockaddr_in server_address;

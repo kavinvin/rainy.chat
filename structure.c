@@ -18,11 +18,16 @@ Node * create(void *data) {
         printlog("Error creating a new node.\n");
         return NULL;
     }
+
+    // assign default attribute
     new_node->data = data;
     new_node->next = NULL;
     new_node->prev = NULL;
     new_node->attached = 0;
+
+    // init mutex on new node
     pthread_mutex_init(&new_node->lock, NULL);
+
     return new_node;
 }
 
@@ -34,6 +39,8 @@ Node * create(void *data) {
  */
 Node * append(List *list, Node *this) {
     printlog("Adding user...\n");
+
+    // lock mutex: locking state
     pthread_mutex_lock(&list->lock);
     if (list->len == 0) {
         // link to self
@@ -46,22 +53,28 @@ Node * append(List *list, Node *this) {
         pthread_mutex_unlock(&list->lock);
         return this;
     }
+
+    // lock mutex: inserting state
     pthread_mutex_lock(&list->head->lock);
     Node *first = list->head;
     Node *last = first->prev;
     if (list->len > 1) pthread_mutex_lock(&last->lock);
     pthread_mutex_unlock(&list->lock);
 
+    // relink neighbor node
     this->next = first;
     this->prev = last;
     first->prev = this;
     last->next = this;
     list->len++;
-    // increment len
     this->attached = 1;
+
+    // unlock mutex
     pthread_mutex_unlock(&first->lock);
     if (list->len > 2) pthread_mutex_unlock(&last->lock);
+
     printlog("User online: %d\n", list->len);
+
     return this;
 }
 
@@ -79,35 +92,44 @@ Node * delete(List *list, Node *this) {
         free(this);
         return NULL;
     }
+
+    // lock mutex: locking state
     pthread_mutex_lock(&list->lock);
     if (this == list->head) {
         // switch head before delete
         list->head = this->next;
     }
+
+    // lock mutex: detaching state
     pthread_mutex_lock(&this->lock);
     Node *prev = this->prev;
     Node *next = this->next;
     if (list->len > 1) pthread_mutex_lock(&next->lock);
     if (list->len > 2) pthread_mutex_lock(&prev->lock);
     pthread_mutex_unlock(&list->lock);
-    // assigned
+
+    // repair neighbor node link
     prev->next = next;
     next->prev = prev;
     this->next = NULL;
     this->prev = NULL;
-    // decrement length
+
     list->len--;
     if (list->len == 0) {
         // assign null pointer to head
         list->head = NULL;
     }
-    // assign null pointer to head
+
+    // unlock mutex
     pthread_mutex_unlock(&this->lock);
     if (list->len > 0) pthread_mutex_unlock(&next->lock);
     if (list->len > 1) pthread_mutex_unlock(&prev->lock);
+
+    // destory mutex
     pthread_mutex_destroy(&this->lock);
-    // destroy mutex
+
     printlog("User online: %d\n", list->len);
+
     return this;
 }
 
