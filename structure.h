@@ -35,7 +35,7 @@ struct user_t {
     char *ip_address;
     int socket;
     pthread_t thread_id;
-    int err_count;
+    int credit;
     Header header;
 };
 

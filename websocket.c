@@ -51,8 +51,9 @@ int openHandshake(int server_socket) {
 
     token = strtok(string, "\r\n");
     header->get = token;
-    if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
+    if (strncasecmp("GET /", header->get, 5) != 0) {
         printlog("Invalid header\n");
+        printf("%s", buffer);
         return -1;
     }
 
@@ -95,6 +96,10 @@ int openHandshake(int server_socket) {
             printlog("-> User-Agent: %s\n", header->protocol);
         }
         token = strtok(NULL, "\r\n");
+    }
+
+    if (header->key == NULL) {
+        return -1;
     }
 
     // sha1, encode64
@@ -217,7 +222,7 @@ int wsRecv(Node *this, http_frame *frame) {
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
 
-    if (frame->size >= 8192) {
+    if (frame->size >= 1200) {
         printlog("Message too long\n");
         return MESSAGE_TOO_LONG;
     }
@@ -256,7 +261,7 @@ int sendMessage(Node *this, void *frame_void) {
     return 0;
 }
 
-void sendStatus(List *all_users) {
+void sendStatus(List *all_users, User *added_user, User *removed_user) {
     json_t *json, *username, *username_list;
     json_error_t json_err;
     User *user;
@@ -273,24 +278,38 @@ void sendStatus(List *all_users) {
     do {
         user = (User*)cursor->data;
         username = json_string(user->name);
-        json_array_append(username_list, username);
+        json_array_append_new(username_list, username);
         cursor = cursor->next;
     } while (cursor != all_users->head);
 
-    json = json_pack("{s:s, s:i, s:o}", "type", "online",
-                                        "count", all_users->len,
-                                        "users", username_list);
+    json = json_pack("{s:s, s:i, s:o}",
+                     "type", "online",
+                     "count", all_users->len,
+                     "users", username_list);
+
+    if (added_user != NULL) {
+        printf("%s\n", added_user->name);
+        if (json_object_set_new(json, "added", json_string(added_user->name)) < 0) {
+            printf("%s\n", "error set added user\n");
+        }
+    }
+    if (removed_user != NULL) {
+        if (json_object_set_new(json, "removed", json_string(removed_user->name)) < 0) {
+            printf("%s\n", "error set added user\n");
+        }
+    }
+
     message = json_dumps(json, JSON_COMPACT);
     printf("%s\n", message);
     broadcast(all_users, cursor, message, ALL);
-    free(json);
     free(message);
 }
 
 void removeNode(List *list, Node *this) {
-    removeUser(this->data);
     delete(list, this);
-    sendStatus(list);
+    sendStatus(list, NULL, this->data);
+    removeUser(this->data);
+    free(this);
 }
 
 void removeUser(User *user) {

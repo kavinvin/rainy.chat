@@ -167,13 +167,24 @@ void *initRecvSession(void *param) {
     }
 
     // validate whether a user can join a chat room
-    validateUser(this, &frame);
+    while (user->credit) {
+        printf("%s\n", "try to get username");
+        if (validateUser(all_users, this, &frame) == 0) {
+            break;
+        }
+        user->credit--;
+    }
+
+    if (!user->credit) {
+        removeNode(all_users, this);
+        pthread_exit(NULL);
+    }
 
     // append user node to chatroom
     append(all_users, this);
 
     // send online status
-    sendStatus(all_users);
+    sendStatus(all_users, user, NULL);
 
     while (1) {
         // receive message from client
@@ -207,19 +218,20 @@ User *acceptUser(int server_socket) {
 
     // accept incoming request, create new client socket
     user->socket = accept(server_socket, (struct sockaddr *) &cli_addr, &clilen);
-    pthread_mutex_unlock(&mutex_accept);
-
-    printlog("-- Accepting client --\n");
     if (user->socket < 0) {
         printlog("Error on accepting: %s\n", strerror(errno));
         free(user);
-        pthread_exit(NULL);
+        exit(1);
     }
+    pthread_mutex_unlock(&mutex_accept);
+
+    printlog("-- Accepting client --\n");
+
 
     user->ip_address = inet_ntoa(cli_addr.sin_addr);
     user->thread_id = pthread_self();
     user->name = NULL;
-    user->err_count = 0;
+    user->credit = 20;
 
     printlog("Client socket ip: %s\n", user->ip_address);
 
@@ -232,10 +244,12 @@ User *acceptUser(int server_socket) {
  *   ask for user preriquisite before joining room
  *   return 0 if success, -1 if failied
  */
-int validateUser(Node *this, http_frame *frame) {
+int validateUser(List *all_users, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     json_t* json;
     json_error_t json_err;
+    Node *cursor;
+    User *otheruser;
 
     memset(frame, 0, sizeof(*frame));
     if (wsRecv(this, frame) != SUCCESS) {
@@ -243,10 +257,42 @@ int validateUser(Node *this, http_frame *frame) {
         pthread_exit(NULL);
     }
     json = json_loads(frame->message, 0, &json_err);
+    if (json == NULL) {
+        printlog("Login error: invalid json\n");
+        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid format\"}", SELF);
+        free(json);
+        free(frame->message);
+        return -1;
+    }
     json_unpack(json, "{s:s}", "username", &user->name);
+    if (user->name == NULL) {
+        printlog("Login error: no usernmae given\n");
+        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"No username given\"}", SELF);
+        free(json);
+        free(frame->message);
+        return -1;
+    }
+
+    cursor = all_users->head;
+    if (cursor != NULL) {
+        do {
+            otheruser = (User*)cursor->data;
+            printf("%s == %s\n", user->name, otheruser->name);
+            if (strcmp(user->name, otheruser->name) == 0) {
+                printlog("Login error: username taken\n");
+                broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Username taken\"}", SELF);
+                free(json);
+                free(frame->message);
+                return -1;
+            }
+            cursor = cursor->next;
+        } while (cursor != all_users->head);
+    }
+
     printf("Username: %s\n", user->name);
-    free(frame->message);
+    broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
     free(json);
+    free(frame->message);
     return 0;
 }
 
@@ -259,7 +305,7 @@ int validateUser(Node *this, http_frame *frame) {
 char *getMessage(List *all_users, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     char *message;
-    json_t* json;
+    json_t *json;
     json_error_t json_err;
 
     memset(frame, 0, sizeof(*frame));
@@ -270,9 +316,11 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     readMessage(all_users, this, frame->message); // mutex
 
     // build json
-    json = json_pack("{s:s, s:s, s:s}", "type", "message",
-                                        "username", user->name,
-                                        "message", frame->message);
+    json = json_pack("{s:i, s:s, s:s, s:s}",
+                     "id", user->socket,
+                     "type", "message",
+                     "username", user->name,
+                     "message", frame->message);
     message = json_dumps(json, JSON_COMPACT);
     free(json);
     free(frame->message);

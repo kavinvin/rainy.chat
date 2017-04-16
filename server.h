@@ -14,7 +14,7 @@ List *newList(void);
 int initMutex(int count, ...);
 void forkService(int server_socket, List *all_users);
 User *acceptUser(int server_socket);
-int validateUser(Node *this, http_frame *message);
+int validateUser(List *all_users, Node *this, http_frame *message);
 char *getMessage(List *all_users, Node *this, http_frame *message);
 void *initRecvSession(void *user_param);
 void *initServerSession(void *server_socket_param);
