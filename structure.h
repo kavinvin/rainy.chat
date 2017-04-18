@@ -15,6 +15,7 @@
 #define OTHER 2
 
 typedef struct {
+    char *string;
     char *get;
     char *upgrade;
     char *connection;
@@ -36,7 +37,7 @@ struct user_t {
     int socket;
     pthread_t thread_id;
     int credit;
-    Header header;
+    Header *header;
 };
 
 struct room_t {

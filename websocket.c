@@ -33,10 +33,10 @@ char * getHandshakeKey(char *str) {
  *   the corresponding header field
  *   return 1 if success, -1 if failed
  */
-int openHandshake(int server_socket) {
-    char buffer[BUFFERSIZE], serv_handshake[300], *token, *string, *sec_ws_accept;
-    Header *header = newHeader();
+Header *openHandshake(int server_socket) {
+    char buffer[BUFFERSIZE], serv_handshake[300], *token, *sec_ws_accept;
     int length, state;
+    Header *header = newHeader();
 
     printlog("-- Handshaking-- \n");
 
@@ -45,19 +45,19 @@ int openHandshake(int server_socket) {
     if ( (length = recv(server_socket, buffer, BUFFERSIZE, 0)) < 0 ) {
         printlog("Handshaking failed\n");
         close(server_socket);
-        return -1;
+        return NULL;
     }
 
-    string = calloc(length+1, 1);
-    strncpy(string, buffer, length);
+    header->string = calloc(length+1, 1);
+    strncpy(header->string, buffer, length);
 
     // parse http method
-    token = strtok(string, "\r\n");
+    token = strtok(header->string, "\r\n");
     header->get = token;
     if (strncasecmp("GET /", header->get, 5) != 0) {
         printlog("Invalid header\n");
         printlog("%s", buffer);
-        return -1;
+        return NULL;
     }
 
     // save header attribute
@@ -103,7 +103,7 @@ int openHandshake(int server_socket) {
     }
 
     if (header->key == NULL) {
-        return -1;
+        return NULL;
     }
 
     // sha1, encode64
@@ -119,7 +119,7 @@ int openHandshake(int server_socket) {
 
     free(sec_ws_accept);
 
-    return 0;
+    return header;
 
 }
 
@@ -132,6 +132,7 @@ int openHandshake(int server_socket) {
 Header *newHeader() {
     Header *header = malloc(sizeof(Header));
     if (header != NULL) {
+        // header->string = NULL;
         header->get = NULL;
         header->upgrade = NULL;
         header->connection = NULL;
@@ -368,5 +369,6 @@ void removeNode(List *list, Node *this) {
 void removeUser(User *user) {
     close(user->socket);
     free(user->name);
+    free(user->header->string);
     free(user);
 }
