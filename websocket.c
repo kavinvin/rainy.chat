@@ -189,6 +189,7 @@ int wsSend(Node *this, http_frame *frame) {
         printlog("%s\n", "Error on sending message");
         return -1;
     }
+    printlog("Message sent to #%d: %s (%s)\n", user->socket, user->name, user->ip_address);
     return 0;
 }
 
@@ -343,6 +344,7 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
 
     // broadcast status
     message = json_dumps(json, JSON_COMPACT);
+    printf("%s\n", message);
     broadcast(all_users, cursor, message, ALL);
     free(message);
 }

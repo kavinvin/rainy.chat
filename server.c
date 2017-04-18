@@ -300,6 +300,8 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
         } while (cursor != all_users->head);
     }
 
+    printf("Username: %s\n", user->name);
+
     // notify all users of the new user
     broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
     free(json);
@@ -369,7 +371,11 @@ int readMessage(List *all_users, Node *this, char *message) {
         return 0;
     } else {
         // message mode
-        printlog("Message received from #%d: %s\n", user->socket, user->name);
+        printlog("Message received from #%d: %s (%s)\nMessage: %s\n",
+                 user->socket,
+                 user->name,
+                 user->ip_address,
+                 message);
         return 1;
     }
 }
