@@ -54,11 +54,13 @@ Node * append(List *list, Node *this) {
         return this;
     }
 
-    // lock mutex: inserting state
-    pthread_mutex_lock(&list->head->lock);
     Node *first = list->head;
     Node *last = first->prev;
-    if (list->len > 1) pthread_mutex_lock(&last->lock);
+
+    // lock mutex: inserting state
+    pthread_mutex_lock(&first->lock);
+    if (first != last) pthread_mutex_lock(&last->lock);
+
     pthread_mutex_unlock(&list->lock);
 
     // relink neighbor node
@@ -71,7 +73,7 @@ Node * append(List *list, Node *this) {
 
     // unlock mutex
     pthread_mutex_unlock(&first->lock);
-    if (list->len > 2) pthread_mutex_unlock(&last->lock);
+    if (first != last) pthread_mutex_unlock(&last->lock);
 
     printlog("User online: %d\n", list->len);
 
@@ -79,33 +81,37 @@ Node * append(List *list, Node *this) {
 }
 
 /**
- * Function: delete
+ * Function: pop
  * ----------------------------
  *   remove selected node from the given list
- *   return next available node
+ *   return removed node (must be freed)
  */
-Node * delete(List *list, Node *this) {
+Node * pop(List *list, Node *this) {
     printlog("Removing user...\n");
     if (!this->attached) {
-        // node to be delete is in alredy in detached state
+        // node to be pop is in alredy in detached state
+        this->next = NULL;
+        this->prev = NULL;
         pthread_mutex_destroy(&this->lock);
-        free(this);
         return NULL;
     }
 
     // lock mutex: locking state
     pthread_mutex_lock(&list->lock);
+
     if (this == list->head) {
-        // switch head before delete
+        // switch head before pop
         list->head = this->next;
     }
 
-    // lock mutex: detaching state
-    pthread_mutex_lock(&this->lock);
     Node *prev = this->prev;
     Node *next = this->next;
-    if (list->len > 1) pthread_mutex_lock(&next->lock);
-    if (list->len > 2) pthread_mutex_lock(&prev->lock);
+
+    // lock mutex: detaching state
+    pthread_mutex_lock(&this->lock);
+    if (this != next) pthread_mutex_lock(&next->lock);
+    if (next != prev) pthread_mutex_lock(&prev->lock);
+
     pthread_mutex_unlock(&list->lock);
 
     // repair neighbor node link
@@ -122,8 +128,8 @@ Node * delete(List *list, Node *this) {
 
     // unlock mutex
     pthread_mutex_unlock(&this->lock);
-    if (list->len > 0) pthread_mutex_unlock(&next->lock);
-    if (list->len > 1) pthread_mutex_unlock(&prev->lock);
+    if (this != next) pthread_mutex_unlock(&next->lock);
+    if (next != prev) pthread_mutex_unlock(&prev->lock);
 
     // destory mutex
     pthread_mutex_destroy(&this->lock);

@@ -29,7 +29,7 @@ char * getHandshakeKey(char *str) {
 /**
  * Function: openHandshake
  * ----------------------------
- *   recieve handshake message from client and return them
+ *   receive handshake message from client and return them
  *   the corresponding header field
  *   return 1 if success, -1 if failed
  */
@@ -206,7 +206,7 @@ int wsRecv(Node *this, http_frame *frame) {
     char buffer[BUFFERSIZE], mask[4];
     memset(buffer, '\0', BUFFERSIZE);
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
-        printlog("%s\n", "Error on recieving message");
+        printlog("%s\n", "Error on receiving message");
         return CLIENT_DISCONNECT;
     }
 
@@ -346,6 +346,8 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
     message = json_dumps(json, JSON_COMPACT);
     printf("%s\n", message);
     broadcast(all_users, cursor, message, ALL);
+    free(json);
+    free(username_list);
     free(message);
 }
 
@@ -356,7 +358,7 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
  *   return void
  */
 void removeNode(List *list, Node *this) {
-    delete(list, this);
+    pop(list, this);
     sendStatus(list, NULL, this->data);
     removeUser(this->data);
     free(this);

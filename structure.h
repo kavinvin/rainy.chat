@@ -29,6 +29,7 @@ typedef struct {
     char *agent;
 } Header;
 
+struct list_t;
 struct room_t;
 
 struct user_t {
@@ -41,34 +42,35 @@ struct user_t {
 };
 
 struct room_t {
-    char name[51];
+    char name[64];
     struct room_t *next;
-    struct user_t *users;
 };
 
 struct node_t {
     void *data;
     struct node_t *next;
     struct node_t *prev;
+    struct list_t *superlist;
+    struct list_t *sublist;
     pthread_mutex_t lock;
     int attached;
 };
 
-typedef struct {
+struct list_t {
     struct node_t *head;
     int len;
     pthread_mutex_t lock;
-} List;
+};
 
 typedef struct user_t User;
 typedef struct room_t Room;
 typedef struct node_t Node;
-typedef struct thread_shared ThreadShared;
+typedef struct list_t List;
 
 typedef int (*callback)(Node *data, void *argument);
 Node * create(void *data);
 Node * append(List *list, Node *new_node);
-Node * delete(List *list, Node *this);
+Node * pop(List *list, Node *this);
 int map(Node *head, callback function, void *argument, int flag);
 
 pthread_mutex_t mutex_log;

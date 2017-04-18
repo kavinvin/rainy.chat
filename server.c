@@ -5,6 +5,7 @@
  */
 
 #include "server.h"
+#include "room.h"
 
 /**
  * Function: serveRainyChat
@@ -122,7 +123,7 @@ void forkService(int server_socket, List *all_users) {
         pthread_mutex_lock(&mutex_accept);
 
         // create new thread
-        state = pthread_create(thread_id, NULL, initRecvSession, (void*)&args);
+        state = pthread_create(thread_id, &attr, initRecvSession, (void*)&args);
         if (state){
             printlog("ERROR: return code from pthread_create() is %d\n", state);
             free(thread_id);
@@ -151,7 +152,7 @@ void *initRecvSession(void *param) {
     Node *this;
 
     // message buffer for communication
-    char *message;
+    char *message, *token, *subdomain[128];
     http_frame frame;
 
     // accept new user and unlock mutex
@@ -186,6 +187,8 @@ void *initRecvSession(void *param) {
         removeNode(all_users, this);
         pthread_exit(NULL);
     }
+
+    // Node room = getRoom(user->header->origin);
 
     // append user to chatroom
     append(all_users, this);
