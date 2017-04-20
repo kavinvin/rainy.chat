@@ -27,13 +27,15 @@ int serveRainyChat(char *host, char *port) {
     server_socket = initSocket(host, port);
 
     // create users list
-    List *all_users = newList();
+    List *global = newList();
+    global->level = 0;
+    initMutex(1, &global->lock);
 
     // prepare mutex
-    initMutex(3, &all_users->lock, &mutex_log, &mutex_accept);
+    initMutex(3, &global->lock, &mutex_log, &mutex_accept);
 
     // create threads serving each client
-    forkService(server_socket, all_users);
+    forkService(server_socket, global);
 
     return 0;
 
@@ -88,17 +90,12 @@ int initMutex(int count, ...) {
  *   create new thread for each new client
  *   return void
  */
-void forkService(int server_socket, List *all_users) {
+void forkService(int server_socket, List *global) {
     int state;
-
-    List *global = newList();
-    global->level = 0;
-    initMutex(1, &global->lock);
 
     // create argument struct for passing to new thread
     pthread_args_t args;
     args.server_socket = server_socket;
-    args.list = all_users;
     args.global = global;
 
     // thread settings
@@ -136,7 +133,6 @@ void *initRecvSession(void *param) {
     // convert void pointer to arguments
     pthread_args_t *args = (pthread_args_t*)param;
     int server_socket = args->server_socket;
-    List *all_users = args->list;
     List *global = args->global;
 
     // users list structure
@@ -144,7 +140,7 @@ void *initRecvSession(void *param) {
     Node *this;
 
     // message buffer for communication
-    char *message, *token, *subdomain[128];
+    char *message, *token, *subdomain[128], *last;
     http_frame frame;
 
     // accept new user and unlock mutex
@@ -165,9 +161,19 @@ void *initRecvSession(void *param) {
         pthread_exit(NULL);
     }
 
+    // parse and create room
+    strtok_r(user->header->origin, "/", &last);
+    List *subrooms = getRoom(global, last+1);
+    Node *room = subrooms->from;
+
+    // display rooms tree
+    tree(global, 0);
+
+    List *user_list = room->users;
+
     // validate whether a user can join a chat room
     while (user->credit) {
-        if (validateUser(all_users, this, &frame) == 0) {
+        if (validateUser(user_list, this, &frame) == 0) {
             break;
         }
         user->credit--;
@@ -176,34 +182,26 @@ void *initRecvSession(void *param) {
     // check user remaining credit
     // if less than 0, cut the connection
     if (!user->credit) {
-        removeNode(all_users, this);
+        removeNode(user_list, this);
         pthread_exit(NULL);
     }
 
-    char *last;
-    strtok_r(user->header->origin, "/", &last);
-    List *subrooms = getRoom(global, last+1);
-    Node *room = subrooms->from;
-    tree(global, 0);
-
-    all_users = room->users;
-
     // append user to chatroom
-    append(all_users, this);
+    append(user_list, this);
 
     // send online status to all user
-    sendStatus(all_users, user, NULL);
+    sendStatus(user_list, user, NULL);
 
     while (1) {
         // receive message from the user
-        message = getMessage(all_users, this, &frame);
+        message = getMessage(user_list, this, &frame);
 
         // broadcast message to all users
-        broadcast(all_users, this, message, OTHER);
+        broadcast(user_list, this, message, OTHER);
         free(message);
     }
 
-    removeNode(all_users, this);
+    removeNode(user_list, this);
     pthread_exit(NULL);
 }
 
@@ -251,7 +249,7 @@ User *acceptUser(int server_socket) {
  *   ask for user preriquisite before joining room
  *   return 0 if success, -1 if failied
  */
-int validateUser(List *all_users, Node *this, http_frame *frame) {
+int validateUser(List *user_list, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     json_t* json;
     json_error_t json_err;
@@ -269,7 +267,7 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
     json = json_loads(frame->message, 0, &json_err);
     if (json == NULL) {
         printlog("Login error: invalid json\n");
-        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid format\"}", SELF);
+        broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid format\"}", SELF);
         free(json);
         free(frame->message);
         return -1;
@@ -279,32 +277,32 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
     json_unpack(json, "{s:s}", "username", &user->name);
     if (user->name == NULL) {
         printlog("Login error: no usernmae given\n");
-        broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"No username given\"}", SELF);
+        broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"No username given\"}", SELF);
         free(json);
         free(frame->message);
         return -1;
     }
 
     // check if the username has been taken
-    cursor = all_users->head;
+    cursor = user_list->head;
     if (cursor != NULL) {
         do {
             otheruser = (User*)cursor->data;
             if (strcmp(user->name, otheruser->name) == 0) {
                 printlog("Login error: username taken\n");
-                broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Username taken\"}", SELF);
+                broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Username taken\"}", SELF);
                 free(json);
                 free(frame->message);
                 return -1;
             }
             cursor = cursor->next;
-        } while (cursor != all_users->head);
+        } while (cursor != user_list->head);
     }
 
     printlog("Username: %s\n", user->name);
 
     // notify all users of the new user
-    broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
+    broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
     free(json);
     free(frame->message);
     return 0;
@@ -316,7 +314,7 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
  *   listen for a message from client
  *   return 0 if success, -1 if failied
  */
-char *getMessage(List *all_users, Node *this, http_frame *frame) {
+char *getMessage(List *user_list, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     char *message;
     json_t *json;
@@ -325,10 +323,10 @@ char *getMessage(List *all_users, Node *this, http_frame *frame) {
     // receive message from user
     memset(frame, 0, sizeof(*frame));
     if (wsRecv(this, frame) != SUCCESS) {
-        removeNode(all_users, this);
+        removeNode(user_list, this);
         pthread_exit(NULL);
     };
-    readMessage(all_users, this, frame->message); // mutex
+    readMessage(user_list, this, frame->message); // mutex
 
     // prepare broadcasting data to all users in the room
     json = json_pack("{s:i, s:s, s:s, s:s}",
@@ -364,11 +362,11 @@ void *initServerSession(void *server_socket_param) {
  *   read a message received from client
  *   return 0 if it's a command, 1 if it's a text message
  */
-int readMessage(List *all_users, Node *this, char *message) {
+int readMessage(List *user_list, Node *this, char *message) {
     User *user = (User*)this->data;
     if (*message == '/') {
         // command mode
-        clientRequest(all_users, this, message);
+        clientRequest(user_list, this, message);
         return 0;
     } else {
         // message mode
@@ -387,10 +385,10 @@ int readMessage(List *all_users, Node *this, char *message) {
  *   search for available command for the user
  *   return void
  */
-void clientRequest(List *all_users, Node *this, char *command) {
+void clientRequest(List *user_list, Node *this, char *command) {
     if (strcmp(command, "/exit") == 0) {
         printlog("Exited\n");
-        removeNode(all_users, this);
+        removeNode(user_list, this);
         pthread_exit(NULL);
     } else {
         printlog("Client command not found\n");

@@ -12,14 +12,14 @@
 int serveRainyChat(char *host, char *port);
 void parseAddr(int argc, char *argv[], char **host, char **port);
 int initMutex(int count, ...);
-void forkService(int server_socket, List *all_users);
+void forkService(int server_socket, List *user_list);
 User *acceptUser(int server_socket);
-int validateUser(List *all_users, Node *this, http_frame *message);
-char *getMessage(List *all_users, Node *this, http_frame *message);
+int validateUser(List *user_list, Node *this, http_frame *message);
+char *getMessage(List *user_list, Node *this, http_frame *message);
 void *initRecvSession(void *user_param);
 void *initServerSession(void *server_socket_param);
-int readMessage(List *all_users, Node *this, char *message);
-void clientRequest(List *all_users, Node *this, char *command);
+int readMessage(List *user_list, Node *this, char *message);
+void clientRequest(List *user_list, Node *this, char *command);
 void serverCommand(int *server_socket, char *command);
 
 typedef struct {

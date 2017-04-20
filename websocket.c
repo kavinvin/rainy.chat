@@ -274,14 +274,14 @@ int wsRecv(Node *this, http_frame *frame) {
  *   send a message to users according to the given flag
  *   return void
  */
-void broadcast(List *all_users, Node *this, char *message, int flag) {
+void broadcast(List *user_list, Node *this, char *message, int flag) {
     http_frame frame;
     memset(&frame, 0, sizeof(frame));
     frame.opcode = 129;
     frame.message = message;
     frame.size = strlen(frame.message);
     if (map(this, sendMessage, &frame, flag) < 0) {
-        removeNode(all_users, this);
+        removeNode(user_list, this);
         pthread_exit(NULL);
     }
 }
@@ -307,19 +307,19 @@ int sendMessage(Node *this, void *frame_void) {
  *   Send other users status to all users
  *   return void
  */
-void sendStatus(List *all_users, User *added_user, User *removed_user) {
+void sendStatus(List *user_list, User *added_user, User *removed_user) {
     json_t *json, *username, *username_list;
     json_error_t json_err;
     User *user;
     Node *cursor;
     char *message;
 
-    if (all_users->len == 0) {
+    if (user_list->len == 0) {
         return;
     }
 
     username_list = json_array();
-    cursor = all_users->head;
+    cursor = user_list->head;
 
     // gather all online usernames
     do {
@@ -327,12 +327,12 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
         username = json_string(user->name);
         json_array_append_new(username_list, username);
         cursor = cursor->next;
-    } while (cursor != all_users->head);
+    } while (cursor != user_list->head);
 
     // pack all to json
     json = json_pack("{s:s, s:i, s:o}",
                      "type", "online",
-                     "count", all_users->len,
+                     "count", user_list->len,
                      "users", username_list);
 
     if (added_user != NULL) {
@@ -345,7 +345,7 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
     // broadcast status
     message = json_dumps(json, JSON_COMPACT);
     printlog("%s\n", message);
-    broadcast(all_users, cursor, message, ALL);
+    broadcast(user_list, cursor, message, ALL);
     free(json);
     free(username_list);
     free(message);
