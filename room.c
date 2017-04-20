@@ -16,7 +16,7 @@
 List *getRoom(List *global, char *last) {
     char *name;
     name = strtok_r(NULL, ".", &last);
-    if (last == NULL) {
+    if (strcmp(name, "rainy") == 0) {
         return global;
     }
     List *rooms = getRoom(global, last);

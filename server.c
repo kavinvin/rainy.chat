@@ -167,6 +167,7 @@ void *initRecvSession(void *param) {
     Node *room = subrooms->from;
 
     // display rooms tree
+    printlog("global\n");
     tree(global, 0);
 
     List *user_list = room->users;
