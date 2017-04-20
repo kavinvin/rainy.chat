@@ -188,11 +188,8 @@ int map(Node *this, callback function, void *argument, int flag) {
  */
 Node *get(Node *this, char *name) {
     Node *cursor = this;
-    printf("searching\n");
     do {
-        printf("comparing %s==%s\n", cursor->name, name);
         if (strcmp(cursor->name, name) == 0) {
-            printf("founded\n");
             return cursor;
         }
         cursor = cursor->next;
@@ -200,6 +197,11 @@ Node *get(Node *this, char *name) {
     return NULL;
 }
 
+/**
+ * Function: tree
+ * ----------------------------
+ *   display node tree from the given node recursively
+ */
 void tree(List *list, int flag) {
     int i;
     if (list->head == NULL) {

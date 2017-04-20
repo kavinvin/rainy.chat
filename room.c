@@ -6,23 +6,25 @@
 
 #include "room.h"
 
+/**
+ * Function: getRoom
+ * ----------------------------
+ *      recursively create rooms from the given dot seperated string
+ *   e.g. "compro.kmitl.rainy.chat" with diffent stack for each level
+ *   return room created
+ */
 List *getRoom(List *global, char *last) {
     char *name;
     name = strtok_r(NULL, ".", &last);
-    printf("name: %s\nremaining: %s\n", name, last);
     if (last == NULL) {
         return global;
     }
     List *rooms = getRoom(global, last);
     Node *room = rooms->head;
-    printf("Starting: %s\n", name);
     if (room != NULL) {
-        printf("Head found\n");
         room = get(room, name);
     }
     if (room == NULL) {
-        printf("Room not found: %s\n", name);
-        printf("Creating: %s\n", name);
         room = create(NULL);
         strcpy(room->name, name);
         room->superlist = rooms;
@@ -36,14 +38,3 @@ List *getRoom(List *global, char *last) {
     return room->sublist;
 }
 
-// Room *getRoom(List room_list, char *names, int levels) {
-//     if (*names == NULL) {
-//         return node
-//     }
-//     Node *room_cursor = room_list->head;
-//     for (int i=levels; i; i--) {
-//         find(room_list, names);
-
-//     }
-//     return getRoom(*names++);
-// }
