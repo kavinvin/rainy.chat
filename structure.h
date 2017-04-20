@@ -41,24 +41,23 @@ struct user_t {
     Header *header;
 };
 
-struct room_t {
-    char name[64];
-    struct room_t *next;
-};
-
 struct node_t {
+    char name[64];
     void *data;
     struct node_t *next;
     struct node_t *prev;
     struct list_t *superlist;
     struct list_t *sublist;
+    struct list_t *users;
     pthread_mutex_t lock;
     int attached;
 };
 
 struct list_t {
     struct node_t *head;
+    struct node_t *from;
     int len;
+    int level;
     pthread_mutex_t lock;
 };
 
@@ -72,6 +71,9 @@ Node * create(void *data);
 Node * append(List *list, Node *new_node);
 Node * pop(List *list, Node *this);
 int map(Node *head, callback function, void *argument, int flag);
+Node *get(List *list, char *name);
+void tree(List *list);
+List *newList(void);
 
 pthread_mutex_t mutex_log;
 

@@ -11,7 +11,6 @@
 
 int serveRainyChat(char *host, char *port);
 void parseAddr(int argc, char *argv[], char **host, char **port);
-List *newList(void);
 int initMutex(int count, ...);
 void forkService(int server_socket, List *all_users);
 User *acceptUser(int server_socket);
@@ -26,6 +25,7 @@ void serverCommand(int *server_socket, char *command);
 typedef struct {
     int server_socket;
     List *list;
+    List *room;
 } pthread_args_t;
 
 pthread_mutex_t mutex_accept;

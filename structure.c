@@ -23,6 +23,8 @@ Node * create(void *data) {
     new_node->data = data;
     new_node->next = NULL;
     new_node->prev = NULL;
+    new_node->superlist = NULL;
+    new_node->sublist = NULL;
     new_node->attached = 0;
 
     // init mutex on new node
@@ -38,7 +40,7 @@ Node * create(void *data) {
  *   return new node
  */
 Node * append(List *list, Node *this) {
-    printlog("Adding user...\n");
+    printlog("Appending to list...\n");
 
     // lock mutex: locking state
     pthread_mutex_lock(&list->lock);
@@ -48,14 +50,17 @@ Node * append(List *list, Node *this) {
         this->prev = this;
         this->attached = 1;
         list->len++;
-        printlog("User online: %d\n", list->len);
+        printlog("List length: %d\n", list->len);
         list->head = this;
         pthread_mutex_unlock(&list->lock);
         return this;
     }
 
+printf("%d\n", list->len);
+printf("Assigning\n");
     Node *first = list->head;
     Node *last = first->prev;
+printf("locking\n");
 
     // lock mutex: inserting state
     pthread_mutex_lock(&first->lock);
@@ -63,6 +68,7 @@ Node * append(List *list, Node *this) {
 
     pthread_mutex_unlock(&list->lock);
 
+printf("attaching\n");
     // relink neighbor node
     this->next = first;
     this->prev = last;
@@ -75,7 +81,7 @@ Node * append(List *list, Node *this) {
     pthread_mutex_unlock(&first->lock);
     if (first != last) pthread_mutex_unlock(&last->lock);
 
-    printlog("User online: %d\n", list->len);
+    printlog("List length: %d\n", list->len);
 
     return this;
 }
@@ -87,7 +93,7 @@ Node * append(List *list, Node *this) {
  *   return removed node (must be freed)
  */
 Node * pop(List *list, Node *this) {
-    printlog("Removing user...\n");
+    printlog("Removing from list...\n");
     if (!this->attached) {
         // node to be pop is in alredy in detached state
         this->next = NULL;
@@ -134,7 +140,7 @@ Node * pop(List *list, Node *this) {
     // destory mutex
     pthread_mutex_destroy(&this->lock);
 
-    printlog("User online: %d\n", list->len);
+    printlog("List length: %d\n", list->len);
 
     return this;
 }
@@ -171,4 +177,56 @@ int map(Node *this, callback function, void *argument, int flag) {
         }
     }
     return 0;
+}
+
+/**
+ * Function: find
+ * ----------------------------
+ *   found sublist by name from the given list
+ *   return sublist found
+ */
+Node *get(List *list, char *name) {
+    Node *cursor = list->head;
+    printf("searching\n");
+    do {
+        printf("comparing %s==%s\n", cursor->name, name);
+        if (strcmp(cursor->name, name) == 0) {
+            printf("founded");
+            return cursor;
+        }
+        cursor = cursor->next;
+    } while (cursor != list->head);
+    return NULL;
+}
+
+void tree(List *list) {
+    if (list->head == NULL) {
+        return;
+    }
+    Node *cursor = list->head;
+    int i;
+    do {
+        for (i=list->level; i; i--) {
+            printf("│   ");
+        }
+        printf("├── %s\n", cursor->name);
+        tree(cursor->sublist);
+        cursor = cursor->next;
+    } while (cursor != list->head);
+}
+
+/**
+ * Function: newList
+ * ----------------------------
+ *   create double-circular linked list structure
+ *   return new list pointer
+ */
+List *newList(void) {
+    List *list;
+    list = malloc(sizeof(List));
+    list->len = 0;
+    list->level = 0;
+    list->head = NULL;
+
+    return list;
 }

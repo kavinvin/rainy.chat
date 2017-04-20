@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c11
-OBJECTS = main.o server.o socket.o websocket.o helper.o base64.o structure.o error.o
+OBJECTS = main.o server.o room.o socket.o websocket.o helper.o base64.o structure.o error.o
 EXEC = Rainy.Chat
 
 $(EXEC): $(OBJECTS)
@@ -9,8 +9,11 @@ $(EXEC): $(OBJECTS)
 main.o: main.c server.o
 	$(CC) $(CFLAGS) -c main.c
 
-server.o: server.c server.h websocket.o
+server.o: server.c server.h websocket.o room.o
 	$(CC) $(CFLAGS) -c server.c
+
+room.o: room.c room.h structure.o
+	$(CC) $(CFLAGS) -c room.c
 
 websocket.o: websocket.c websocket.h socket.o base64.o
 	$(CC) $(CFLAGS) -c websocket.c

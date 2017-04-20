@@ -64,20 +64,6 @@ void parseAddr(int argc, char *argv[], char **host, char **port) {
 }
 
 /**
- * Function: newList
- * ----------------------------
- *   create double-circular linked list structure
- *   return new list pointer
- */
-List *newList(void) {
-    List *list;
-    list = malloc(sizeof(list));
-    list->len = 0;
-    list->head = NULL;
-    return list;
-}
-
-/**
  * Function: initMutex
  * ----------------------------
  *   init all of the given mutex
@@ -104,11 +90,14 @@ int initMutex(int count, ...) {
  */
 void forkService(int server_socket, List *all_users) {
     int state;
+    List *global = newList();
+    initMutex(1, &global->lock);
 
     // create argument struct for passing to new thread
     pthread_args_t args;
     args.server_socket = server_socket;
     args.list = all_users;
+    args.room = global;
 
     // thread settings
     pthread_t *thread_id;
@@ -146,6 +135,7 @@ void *initRecvSession(void *param) {
     pthread_args_t *args = (pthread_args_t*)param;
     int server_socket = args->server_socket;
     List *all_users = args->list;
+    List *global = args->room;
 
     // users list structure
     User *user;
@@ -188,7 +178,12 @@ void *initRecvSession(void *param) {
         pthread_exit(NULL);
     }
 
-    // Node room = getRoom(user->header->origin);
+    char *last;
+    strtok_r(user->header->origin, "/", &last);
+    List *rooms = getRoom(global, last+1);
+    tree(global);
+
+    // all_users = rooms->from->users;
 
     // append user to chatroom
     append(all_users, this);
