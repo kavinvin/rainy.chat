@@ -344,7 +344,7 @@ void sendStatus(List *all_users, User *added_user, User *removed_user) {
 
     // broadcast status
     message = json_dumps(json, JSON_COMPACT);
-    printf("%s\n", message);
+    printlog("%s\n", message);
     broadcast(all_users, cursor, message, ALL);
     free(json);
     free(username_list);

@@ -57,11 +57,8 @@ Node * append(List *list, Node *this) {
         return this;
     }
 
-printf("%d\n", list->len);
-printf("Assigning\n");
     Node *first = list->head;
     Node *last = first->prev;
-printf("locking\n");
 
     // lock mutex: inserting state
     pthread_mutex_lock(&first->lock);
@@ -69,7 +66,6 @@ printf("locking\n");
 
     pthread_mutex_unlock(&list->lock);
 
-printf("attaching\n");
     // relink neighbor node
     this->next = first;
     this->prev = last;
@@ -211,16 +207,16 @@ void tree(List *list, int flag) {
     do {
         for (i=0; i<list->level; i++) {
             if (flag >> i & 1) {
-                printf("    ");
+                printlog("    ");
             } else {
-                printf("|   ");
+                printlog("|   ");
             }
         }
         if (cursor->next == list->head) {
-            printf("└─ %s\n", cursor->name);
+            printlog("└─ %s\n", cursor->name);
             flag |= 1 << list->level;
         } else {
-            printf("|─ %s\n", cursor->name);
+            printlog("|─ %s\n", cursor->name);
         }
         tree(cursor->sublist, flag);
         cursor = cursor->next;

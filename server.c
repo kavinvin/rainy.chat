@@ -301,7 +301,7 @@ int validateUser(List *all_users, Node *this, http_frame *frame) {
         } while (cursor != all_users->head);
     }
 
-    printf("Username: %s\n", user->name);
+    printlog("Username: %s\n", user->name);
 
     // notify all users of the new user
     broadcast(all_users, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
