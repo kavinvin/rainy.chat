@@ -90,14 +90,16 @@ int initMutex(int count, ...) {
  */
 void forkService(int server_socket, List *all_users) {
     int state;
+
     List *global = newList();
+    global->level = 0;
     initMutex(1, &global->lock);
 
     // create argument struct for passing to new thread
     pthread_args_t args;
     args.server_socket = server_socket;
     args.list = all_users;
-    args.room = global;
+    args.global = global;
 
     // thread settings
     pthread_t *thread_id;
@@ -135,7 +137,7 @@ void *initRecvSession(void *param) {
     pthread_args_t *args = (pthread_args_t*)param;
     int server_socket = args->server_socket;
     List *all_users = args->list;
-    List *global = args->room;
+    List *global = args->global;
 
     // users list structure
     User *user;
@@ -180,10 +182,11 @@ void *initRecvSession(void *param) {
 
     char *last;
     strtok_r(user->header->origin, "/", &last);
-    List *rooms = getRoom(global, last+1);
-    tree(global);
+    List *subrooms = getRoom(global, last+1);
+    Node *room = subrooms->from;
+    tree(global, 0);
 
-    // all_users = rooms->from->users;
+    all_users = room->users;
 
     // append user to chatroom
     append(all_users, this);

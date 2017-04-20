@@ -9,6 +9,6 @@
 
 #include "structure.h"
 
-List *getRoom(List *room_list, char *last);
+List *getRoom(List *global, char *last);
 
 #endif

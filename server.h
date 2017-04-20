@@ -25,7 +25,7 @@ void serverCommand(int *server_socket, char *command);
 typedef struct {
     int server_socket;
     List *list;
-    List *room;
+    List *global;
 } pthread_args_t;
 
 pthread_mutex_t mutex_accept;

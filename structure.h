@@ -71,8 +71,8 @@ Node * create(void *data);
 Node * append(List *list, Node *new_node);
 Node * pop(List *list, Node *this);
 int map(Node *head, callback function, void *argument, int flag);
-Node *get(List *list, char *name);
-void tree(List *list);
+Node *get(Node *this, char *name);
+void tree(List *list, int flag);
 List *newList(void);
 
 pthread_mutex_t mutex_log;

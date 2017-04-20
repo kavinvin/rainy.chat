@@ -25,6 +25,7 @@ Node * create(void *data) {
     new_node->prev = NULL;
     new_node->superlist = NULL;
     new_node->sublist = NULL;
+    new_node->users = NULL;
     new_node->attached = 0;
 
     // init mutex on new node
@@ -185,32 +186,41 @@ int map(Node *this, callback function, void *argument, int flag) {
  *   found sublist by name from the given list
  *   return sublist found
  */
-Node *get(List *list, char *name) {
-    Node *cursor = list->head;
+Node *get(Node *this, char *name) {
+    Node *cursor = this;
     printf("searching\n");
     do {
         printf("comparing %s==%s\n", cursor->name, name);
         if (strcmp(cursor->name, name) == 0) {
-            printf("founded");
+            printf("founded\n");
             return cursor;
         }
         cursor = cursor->next;
-    } while (cursor != list->head);
+    } while (cursor != this);
     return NULL;
 }
 
-void tree(List *list) {
+void tree(List *list, int flag) {
+    int i;
     if (list->head == NULL) {
         return;
     }
     Node *cursor = list->head;
-    int i;
     do {
-        for (i=list->level; i; i--) {
-            printf("│   ");
+        for (i=0; i<list->level; i++) {
+            if (flag >> i & 1) {
+                printf("    ");
+            } else {
+                printf("|   ");
+            }
         }
-        printf("├── %s\n", cursor->name);
-        tree(cursor->sublist);
+        if (cursor->next == list->head) {
+            printf("└─ %s\n", cursor->name);
+            flag |= 1 << list->level;
+        } else {
+            printf("|─ %s\n", cursor->name);
+        }
+        tree(cursor->sublist, flag);
         cursor = cursor->next;
     } while (cursor != list->head);
 }
