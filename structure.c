@@ -1,8 +1,8 @@
 /**
-  @file  structure.h
-  @brief A header file to apply common interface and language between
-         the client and a server sides.
-*/
+ * File: structure.c
+ * ----------------------------
+ *   an executable file for defining structure
+ */
 
 #include "structure.h"
 
@@ -18,11 +18,19 @@ Node * create(void *data) {
         printlog("Error creating a new node.\n");
         return NULL;
     }
+
+    // assign default attribute
     new_node->data = data;
     new_node->next = NULL;
     new_node->prev = NULL;
+    new_node->superlist = NULL;
+    new_node->sublist = NULL;
+    new_node->users = NULL;
     new_node->attached = 0;
+
+    // init mutex on new node
     pthread_mutex_init(&new_node->lock, NULL);
+
     return new_node;
 }
 
@@ -33,7 +41,9 @@ Node * create(void *data) {
  *   return new node
  */
 Node * append(List *list, Node *this) {
-    printlog("Adding user...\n");
+    printlog("Appending to list...\n");
+
+    // lock mutex: locking state
     pthread_mutex_lock(&list->lock);
     if (list->len == 0) {
         // link to self
@@ -41,73 +51,94 @@ Node * append(List *list, Node *this) {
         this->prev = this;
         this->attached = 1;
         list->len++;
-        printlog("User online: %d\n", list->len);
+        printlog("List length: %d\n", list->len);
         list->head = this;
         pthread_mutex_unlock(&list->lock);
         return this;
     }
-    pthread_mutex_lock(&list->head->lock);
+
     Node *first = list->head;
     Node *last = first->prev;
-    if (list->len > 1) pthread_mutex_lock(&last->lock);
+
+    // lock mutex: inserting state
+    pthread_mutex_lock(&first->lock);
+    if (first != last) pthread_mutex_lock(&last->lock);
+
     pthread_mutex_unlock(&list->lock);
 
+    // relink neighbor node
     this->next = first;
     this->prev = last;
     first->prev = this;
     last->next = this;
     list->len++;
-    // increment len
     this->attached = 1;
+
+    // unlock mutex
     pthread_mutex_unlock(&first->lock);
-    if (list->len > 2) pthread_mutex_unlock(&last->lock);
-    printlog("User online: %d\n", list->len);
+    if (first != last) pthread_mutex_unlock(&last->lock);
+
+    printlog("List length: %d\n", list->len);
+
     return this;
 }
 
 /**
- * Function: delete
+ * Function: pop
  * ----------------------------
  *   remove selected node from the given list
- *   return next available node
+ *   return removed node (must be freed)
  */
-Node * delete(List *list, Node *this) {
-    printlog("Removing user...\n");
+Node * pop(List *list, Node *this) {
+    printlog("Removing from list...\n");
     if (!this->attached) {
-        // node to be delete is in alredy in detached state
+        // node to be pop is in alredy in detached state
+        this->next = NULL;
+        this->prev = NULL;
         pthread_mutex_destroy(&this->lock);
-        free(this);
         return NULL;
     }
+
+    // lock mutex: locking state
     pthread_mutex_lock(&list->lock);
+
     if (this == list->head) {
-        // switch head before delete
+        // switch head before pop
         list->head = this->next;
     }
-    pthread_mutex_lock(&this->lock);
+
     Node *prev = this->prev;
     Node *next = this->next;
-    if (list->len > 1) pthread_mutex_lock(&next->lock);
-    if (list->len > 2) pthread_mutex_lock(&prev->lock);
+
+    // lock mutex: detaching state
+    pthread_mutex_lock(&this->lock);
+    if (this != next) pthread_mutex_lock(&next->lock);
+    if (next != prev) pthread_mutex_lock(&prev->lock);
+
     pthread_mutex_unlock(&list->lock);
-    // assigned
+
+    // repair neighbor node link
     prev->next = next;
     next->prev = prev;
     this->next = NULL;
     this->prev = NULL;
-    // decrement length
+
     list->len--;
     if (list->len == 0) {
         // assign null pointer to head
         list->head = NULL;
     }
-    // assign null pointer to head
+
+    // unlock mutex
     pthread_mutex_unlock(&this->lock);
-    if (list->len > 0) pthread_mutex_unlock(&next->lock);
-    if (list->len > 1) pthread_mutex_unlock(&prev->lock);
+    if (this != next) pthread_mutex_unlock(&next->lock);
+    if (next != prev) pthread_mutex_unlock(&prev->lock);
+
+    // destory mutex
     pthread_mutex_destroy(&this->lock);
-    // destroy mutex
-    printlog("User online: %d\n", list->len);
+
+    printlog("List length: %d\n", list->len);
+
     return this;
 }
 
@@ -143,4 +174,67 @@ int map(Node *this, callback function, void *argument, int flag) {
         }
     }
     return 0;
+}
+
+/**
+ * Function: find
+ * ----------------------------
+ *   found sublist by name from the given list
+ *   return sublist found
+ */
+Node *get(Node *this, char *name) {
+    Node *cursor = this;
+    do {
+        if (strcmp(cursor->name, name) == 0) {
+            return cursor;
+        }
+        cursor = cursor->next;
+    } while (cursor != this);
+    return NULL;
+}
+
+/**
+ * Function: tree
+ * ----------------------------
+ *   display node tree from the given node recursively
+ */
+void tree(List *list, int flag) {
+    int i;
+    if (list->head == NULL) {
+        return;
+    }
+    Node *cursor = list->head;
+    do {
+        for (i=0; i<list->level; i++) {
+            if (flag >> i & 1) {
+                printlog("    ");
+            } else {
+                printlog("|   ");
+            }
+        }
+        if (cursor->next == list->head) {
+            printlog("└─ %s\n", cursor->name);
+            flag |= 1 << list->level;
+        } else {
+            printlog("|─ %s\n", cursor->name);
+        }
+        tree(cursor->sublist, flag);
+        cursor = cursor->next;
+    } while (cursor != list->head);
+}
+
+/**
+ * Function: newList
+ * ----------------------------
+ *   create double-circular linked list structure
+ *   return new list pointer
+ */
+List *newList(void) {
+    List *list;
+    list = malloc(sizeof(List));
+    list->len = 0;
+    list->level = 0;
+    list->head = NULL;
+
+    return list;
 }

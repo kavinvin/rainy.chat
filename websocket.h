@@ -1,7 +1,8 @@
 /**
-  @file  websocket.h
-  @brief A header file include websocket function
-*/
+ * File: websocket.h
+ * ----------------------------
+ *   a header file of websocket.c
+ */
 
 #ifndef WEBSOCKET_H_
 #define WEBSOCKET_H_
@@ -18,13 +19,13 @@ typedef struct {
 } http_frame;
 
 char * getHandshakeKey(char *str);
-int openHandshake(int server_socket);
+Header *openHandshake(int server_socket);
 Header *newHeader();
 int wsSend(Node *this, http_frame *frame);
 int wsRecv(Node *this, http_frame *frame);
-void broadcast(List *all_users, Node *this, char *message, int flag);
+void broadcast(List *user_list, Node *this, char *message, int flag);
 int sendMessage(Node *cursor, void *message);
-void sendStatus(List *all_users, User *added_user, User *removed_user);
+void sendStatus(List *user_list, User *added_user, User *removed_user);
 void removeNode(List *list, Node *this);
 void removeUser(User *user);
 

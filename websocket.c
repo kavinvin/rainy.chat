@@ -1,7 +1,9 @@
 /**
-  @file  websocket.h
-  @brief A header file include websocket function
-*/
+ * File: websocket.c
+ * ----------------------------
+ *   an executable file of websocket function which serve interface
+ *   between browser and raw socket
+ */
 
 #include "websocket.h"
 
@@ -27,14 +29,14 @@ char * getHandshakeKey(char *str) {
 /**
  * Function: openHandshake
  * ----------------------------
- *   recieve handshake message from client and return them
+ *   receive handshake message from client and return them
  *   the corresponding header field
  *   return 1 if success, -1 if failed
  */
-int openHandshake(int server_socket) {
-    char buffer[BUFFERSIZE], serv_handshake[300], *token, *string, *sec_ws_accept;
-    Header *header = newHeader();
+Header *openHandshake(int server_socket) {
+    char buffer[BUFFERSIZE], serv_handshake[300], *token, *sec_ws_accept;
     int length, state;
+    Header *header = newHeader();
 
     printlog("-- Handshaking-- \n");
 
@@ -43,20 +45,22 @@ int openHandshake(int server_socket) {
     if ( (length = recv(server_socket, buffer, BUFFERSIZE, 0)) < 0 ) {
         printlog("Handshaking failed\n");
         close(server_socket);
-        return -1;
+        return NULL;
     }
 
-    string = calloc(length+1, 1);
-    strncpy(string, buffer, length);
+    header->string = calloc(length+1, 1);
+    strncpy(header->string, buffer, length);
 
-    token = strtok(string, "\r\n");
+    // parse http method
+    token = strtok(header->string, "\r\n");
     header->get = token;
     if (strncasecmp("GET /", header->get, 5) != 0) {
         printlog("Invalid header\n");
-        printf("%s", buffer);
-        return -1;
+        printlog("%s", buffer);
+        return NULL;
     }
 
+    // save header attribute
     while (token != NULL) {
         if (strncasecmp("Upgrade: ", token, 9) == 0) {
             // Upgrade
@@ -99,7 +103,7 @@ int openHandshake(int server_socket) {
     }
 
     if (header->key == NULL) {
-        return -1;
+        return NULL;
     }
 
     // sha1, encode64
@@ -115,13 +119,20 @@ int openHandshake(int server_socket) {
 
     free(sec_ws_accept);
 
-    return 0;
+    return header;
 
 }
 
+/**
+ * Function: newHeader
+ * ----------------------------
+ *   create new header struct
+ *   return new header
+ */
 Header *newHeader() {
     Header *header = malloc(sizeof(Header));
     if (header != NULL) {
+        // header->string = NULL;
         header->get = NULL;
         header->upgrade = NULL;
         header->connection = NULL;
@@ -137,6 +148,13 @@ Header *newHeader() {
     return header;
 }
 
+/**
+ * Function: wsSend
+ * ----------------------------
+ *   wsSend(user, http_frame)
+ *   send http_frame to the given user
+ *   return 0 if success, -1 if failed
+ */
 int wsSend(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int skip;
@@ -144,6 +162,7 @@ int wsSend(Node *this, http_frame *frame) {
 
     memset(buffer, 0, sizeof(buffer));
 
+    // calculate frame szie
     if (frame->size <= 125) {
         skip = 2;
         buffer[1] = frame->size;
@@ -174,16 +193,24 @@ int wsSend(Node *this, http_frame *frame) {
     return 0;
 }
 
+/**
+ * Function: wsRecv
+ * ----------------------------
+ *   wsRecv(user, http_frame)
+ *   Receive message from user
+ *   return 0 if success, -1 if failed
+ */
 int wsRecv(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int opcode, length, hasmask, skip;
     char buffer[BUFFERSIZE], mask[4];
     memset(buffer, '\0', BUFFERSIZE);
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
-        printlog("%s\n", "Error on recieving message");
+        printlog("%s\n", "Error on receiving message");
         return CLIENT_DISCONNECT;
     }
 
+    // parse http frame
     opcode = buffer[0] & 0xff;
     hasmask = buffer[1] & 0x80 ? 1 : 0;
     length = buffer[1] & 0x7f;
@@ -222,36 +249,49 @@ int wsRecv(Node *this, http_frame *frame) {
         memcpy(frame->mask, buffer + 10, sizeof(frame->mask));
     }
 
-    if (frame->size >= 1200) {
+    // restrict message length
+    if (frame->size > 1200) {
         printlog("Message too long\n");
         return MESSAGE_TOO_LONG;
     }
 
+    // allocate memory for the message
     frame->message = malloc(frame->size+1); // warning: memory leakage
     memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
-
-    // printf("expected msg len: %llu\n", frame->size);
 
     // remove mask from data
     for (uint64_t i=0; i<frame->size; i++){
         frame->message[i] = frame->message[i] ^ frame->mask[i % 4];
     }
+
     return SUCCESS;
 }
 
-void broadcast(List *all_users, Node *this, char *message, int flag) {
+/**
+ * Function: broadcast
+ * ----------------------------
+ *   send a message to users according to the given flag
+ *   return void
+ */
+void broadcast(List *user_list, Node *this, char *message, int flag) {
     http_frame frame;
     memset(&frame, 0, sizeof(frame));
     frame.opcode = 129;
     frame.message = message;
     frame.size = strlen(frame.message);
     if (map(this, sendMessage, &frame, flag) < 0) {
-        removeNode(all_users, this);
+        removeNode(user_list, this);
         pthread_exit(NULL);
     }
 }
 
+/**
+ * Function: forkService
+ * ----------------------------
+ *   create new thread for each new client
+ *   return void
+ */
 int sendMessage(Node *this, void *frame_void) {
     User *user = (User*)(this->data);
     http_frame *frame = (http_frame*)frame_void;
@@ -261,59 +301,78 @@ int sendMessage(Node *this, void *frame_void) {
     return 0;
 }
 
-void sendStatus(List *all_users, User *added_user, User *removed_user) {
+/**
+ * Function: sendStatus
+ * ----------------------------
+ *   Send other users status to all users
+ *   return void
+ */
+void sendStatus(List *user_list, User *added_user, User *removed_user) {
     json_t *json, *username, *username_list;
     json_error_t json_err;
     User *user;
     Node *cursor;
     char *message;
 
-    if (all_users->len == 0) {
+    if (user_list->len == 0) {
         return;
     }
 
     username_list = json_array();
-    cursor = all_users->head;
+    cursor = user_list->head;
 
+    // gather all online usernames
     do {
         user = (User*)cursor->data;
         username = json_string(user->name);
         json_array_append_new(username_list, username);
         cursor = cursor->next;
-    } while (cursor != all_users->head);
+    } while (cursor != user_list->head);
 
+    // pack all to json
     json = json_pack("{s:s, s:i, s:o}",
                      "type", "online",
-                     "count", all_users->len,
+                     "count", user_list->len,
                      "users", username_list);
 
     if (added_user != NULL) {
-        printf("%s\n", added_user->name);
-        if (json_object_set_new(json, "added", json_string(added_user->name)) < 0) {
-            printf("%s\n", "error set added user\n");
-        }
+        json_object_set_new(json, "added", json_string(added_user->name));
     }
     if (removed_user != NULL) {
-        if (json_object_set_new(json, "removed", json_string(removed_user->name)) < 0) {
-            printf("%s\n", "error set added user\n");
-        }
+        json_object_set_new(json, "removed", json_string(removed_user->name));
     }
 
+    // broadcast status
     message = json_dumps(json, JSON_COMPACT);
-    printf("%s\n", message);
-    broadcast(all_users, cursor, message, ALL);
+    printlog("%s\n", message);
+    broadcast(user_list, cursor, message, ALL);
+    free(json);
+    free(username_list);
     free(message);
 }
 
+/**
+ * Function: removeNode
+ * ----------------------------
+ *   Remove user node from the given list
+ *   return void
+ */
 void removeNode(List *list, Node *this) {
-    delete(list, this);
+    pop(list, this);
     sendStatus(list, NULL, this->data);
     removeUser(this->data);
     free(this);
 }
 
+/**
+ * Function: removeUser
+ * ----------------------------
+ *   Free user memory
+ *   return void
+ */
 void removeUser(User *user) {
     close(user->socket);
     free(user->name);
+    free(user->header->string);
     free(user);
 }

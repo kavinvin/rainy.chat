@@ -1,7 +1,8 @@
 /**
-  @file  server.h
-  @brief Instant messaging API
-*/
+ * File: error.h
+ * ----------------------------
+ *   a header file of error.c
+ */
 
 #ifndef ERROR_H_
 #define ERROR_H_
@@ -13,6 +14,6 @@
 #define INVALID_HEADER 2
 #define MESSAGE_TOO_LONG 3
 
-void sig_handler(int signal);
+void signalHandler(int signal);
 
 #endif

@@ -1,7 +1,8 @@
 /**
-  @file  helper.h
-  @brief header file included helper functions
-*/
+ * File: helper.h
+ * ----------------------------
+ *   a header file of helper.c
+ */
 
 #ifndef HELPER_H_
 #define HELPER_H_
