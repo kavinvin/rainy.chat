@@ -140,8 +140,9 @@ void *initRecvSession(void *param) {
     Node *this;
 
     // message buffer for communication
-    char *message, *token, *subdomain[128], *last;
+    char *message, *token, *subdomain[128], *last, *json_rooms_string;
     http_frame frame;
+    json_t *json_rooms, *json_rooms_envelop;
 
     // accept new user and unlock mutex
     user = acceptUser(server_socket);
@@ -166,15 +167,9 @@ void *initRecvSession(void *param) {
     List *subrooms = getRoom(global, last+1);
     Node *room = subrooms->from;
 
-    // display rooms tree
-    printlog("global\n");
-    tree(global, 0);
-
-    List *user_list = room->users;
-
     // validate whether a user can join a chat room
     while (user->credit) {
-        if (validateUser(user_list, this, &frame) == 0) {
+        if (validateUser(room->users, this, &frame) == 0) {
             break;
         }
         user->credit--;
@@ -183,26 +178,43 @@ void *initRecvSession(void *param) {
     // check user remaining credit
     // if less than 0, cut the connection
     if (!user->credit) {
-        removeNode(user_list, this);
+        removeNode(room->users, this);
         pthread_exit(NULL);
     }
 
     // append user to chatroom
-    append(user_list, this);
+    append(room->users, this);
 
     // send online status to all user
-    sendStatus(user_list, user, NULL);
+    sendStatus(room->users, user, NULL);
+
+    // display rooms tree and collect to JSON
+    json_rooms = json_object();
+    printlog(".\n");
+    tree(global, json_rooms, 0);
+
+    // dumps to string and broadcast to global user
+    json_rooms_envelop = json_object();
+    // json_object_set_new(json_rooms_envelop, "type", json_string("rooms"));
+    // json_object_set_new(json_rooms_envelop, "rooms", json_rooms);
+    json_rooms_envelop = json_pack("{s:s, s:o?}",
+                                   "type", "rooms",
+                                   "rooms", json_rooms);
+    json_rooms_string = json_dumps(json_rooms_envelop, JSON_COMPACT);
+    printf("%s\n", json_rooms_string);
+    broadcast(room->users, room->users->head, json_rooms_string, ALL);
+    free(json_rooms_string);
 
     while (1) {
         // receive message from the user
-        message = getMessage(user_list, this, &frame);
+        message = getMessage(room->users, this, &frame);
 
         // broadcast message to all users
-        broadcast(user_list, this, message, OTHER);
+        broadcast(room->users, this, message, OTHER);
         free(message);
     }
 
-    removeNode(user_list, this);
+    removeNode(room->users, this);
     pthread_exit(NULL);
 }
 
@@ -252,7 +264,7 @@ User *acceptUser(int server_socket) {
  */
 int validateUser(List *user_list, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
-    json_t* json;
+    json_t *json;
     json_error_t json_err;
     Node *cursor;
     User *otheruser;
