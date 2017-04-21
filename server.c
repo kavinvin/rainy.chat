@@ -245,6 +245,7 @@ User *acceptUser(int server_socket) {
 
     // unlock mutex, ready for new client
     pthread_mutex_unlock(&mutex_accept);
+    printtime();
     printlog("-- Accepting client --\n");
 
     // set up default attibute
