@@ -198,10 +198,10 @@ Node *get(Node *this, char *name) {
  * ----------------------------
  *   display node tree from the given node recursively
  */
-void tree(List *list, int flag) {
+json_t *tree(List *list, json_t *json, int flag) {
     int i;
     if (list->head == NULL) {
-        return;
+        return json;
     }
     Node *cursor = list->head;
     do {
@@ -218,9 +218,12 @@ void tree(List *list, int flag) {
         } else {
             printlog("|─ %s\n", cursor->name);
         }
-        tree(cursor->sublist, flag);
+        json_t *json_child = json_object();
+        json_object_set_new(json, cursor->name, json_child);
+        tree(cursor->sublist, json_child, flag);
         cursor = cursor->next;
     } while (cursor != list->head);
+    return json;
 }
 
 /**

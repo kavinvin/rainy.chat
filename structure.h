@@ -72,7 +72,7 @@ Node * append(List *list, Node *new_node);
 Node * pop(List *list, Node *this);
 int map(Node *head, callback function, void *argument, int flag);
 Node *get(Node *this, char *name);
-void tree(List *list, int flag);
+json_t *tree(List *list, json_t *json, int flag);
 List *newList(void);
 
 pthread_mutex_t mutex_log;
