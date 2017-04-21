@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11
+CFLAGS = -std=c11 -posix
 OBJECTS = main.o server.o room.o socket.o websocket.o helper.o base64.o structure.o error.o
 EXEC = Rainy.Chat
 
