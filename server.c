@@ -29,10 +29,9 @@ int serveRainyChat(char *host, char *port) {
     // create users list
     List *global = newList();
     global->level = 0;
-    initMutex(1, &global->lock);
 
     // prepare mutex
-    initMutex(3, &global->lock, &mutex_log, &mutex_accept);
+    initMutex(2, &mutex_log, &mutex_accept);
 
     // create threads serving each client
     forkService(server_socket, global);
