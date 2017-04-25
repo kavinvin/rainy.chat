@@ -51,6 +51,8 @@ Header *openHandshake(int server_socket) {
     header->string = calloc(length+1, 1);
     strncpy(header->string, buffer, length);
 
+    printlog("%s", header->string);
+
     // parse http method
     token = strtok(header->string, "\r\n");
     header->get = token;
