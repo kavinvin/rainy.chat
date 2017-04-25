@@ -24,5 +24,6 @@ void printBits(size_t const size, void const * const ptr);
 void strLower(char *string);
 uint64_t ntohl64(uint64_t value);
 void printlog(char *format, ...);
+void printtime(void);
 
 #endif

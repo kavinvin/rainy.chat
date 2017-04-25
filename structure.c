@@ -238,6 +238,6 @@ List *newList(void) {
     list->len = 0;
     list->level = 0;
     list->head = NULL;
-
+    pthread_mutex_init(&list->lock, NULL);
     return list;
 }

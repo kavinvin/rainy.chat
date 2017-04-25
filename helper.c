@@ -131,6 +131,8 @@ uint64_t ntohl64(uint64_t value) {
 void printlog(char *format, ...) {
     pthread_mutex_lock(&mutex_log);
     logfile = fopen("rainy.log", "a");
+
+    // read format
     va_list args;
     va_start(args, format);
     vprintf(format, args);
@@ -138,6 +140,23 @@ void printlog(char *format, ...) {
     va_start(args, format);
     vfprintf(logfile, format, args);
     va_end(args);
+
+    fclose(logfile);
+    pthread_mutex_unlock(&mutex_log);
+}
+
+void printtime(void) {
+    pthread_mutex_lock(&mutex_log);
+    logfile = fopen("rainy.log", "a");
+
+    // print time stamp
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    printf("Current local time and date: %s", asctime(timeinfo));
+    fprintf(logfile, "Current local time and date: %s", asctime(timeinfo));
+
     fclose(logfile);
     pthread_mutex_unlock(&mutex_log);
 }
