@@ -56,7 +56,7 @@ Header *openHandshake(int server_socket) {
     // parse http method
     token = strtok(header->string, "\r\n");
     header->get = token;
-    if (strncasecmp("GET /", header->get, 5) != 0) {
+    if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
         printlog("Invalid header\n");
         printlog("%s", buffer);
         return NULL;
