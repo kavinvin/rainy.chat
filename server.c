@@ -268,6 +268,9 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
     json_error_t json_err;
     Node *cursor;
     User *otheruser;
+    char *username = NULL;
+
+    user->name = malloc(65);
 
     // recieve login information
     memset(frame, 0, sizeof(*frame));
@@ -281,17 +284,20 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
     if (json == NULL) {
         printlog("Login error: invalid json\n");
         broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Invalid format\"}", SELF);
-        free(json);
+        json_decref(json);
         free(frame->message);
         return -1;
     }
 
     // extract username from json
-    json_unpack(json, "{s:s}", "username", &user->name);
+    json_unpack(json, "{s:s}", "username", &username);
+    strncpy(user->name, username, 64);
+
+    // check if username given
     if (user->name == NULL) {
         printlog("Login error: no usernmae given\n");
         broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"No username given\"}", SELF);
-        free(json);
+        json_decref(json);
         free(frame->message);
         return -1;
     }
@@ -304,7 +310,7 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
             if (strcmp(user->name, otheruser->name) == 0) {
                 printlog("Login error: username taken\n");
                 broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":1,\"errormsg\":\"Username taken\"}", SELF);
-                free(json);
+                json_decref(json);
                 free(frame->message);
                 return -1;
             }
@@ -316,7 +322,7 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
 
     // notify all users of the new user
     broadcast(user_list, this, "{\"type\":\"login\",\"iserror\":0}", SELF);
-    free(json);
+    json_decref(json);
     free(frame->message);
     return 0;
 }
@@ -348,7 +354,7 @@ char *getMessage(List *user_list, Node *this, http_frame *frame) {
                      "username", user->name,
                      "message", frame->message);
     message = json_dumps(json, JSON_COMPACT);
-    free(json);
+    json_decref(json);
     free(frame->message);
     return message;
 }
