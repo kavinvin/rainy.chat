@@ -33,8 +33,8 @@ char * getHandshakeKey(char *str) {
  *   the corresponding header field
  *   return 1 if success, -1 if failed
  */
-Header *openHandshake(int server_socket) {
-    char buffer[BUFFERSIZE], serv_handshake[300], *token, *sec_ws_accept;
+int openHandshake(User *user) {
+    char buffer[BUFFERSIZE], serv_handshake[300], *token, *last, *sec_ws_accept;
     int length, state;
     Header *header = newHeader();
 
@@ -42,10 +42,10 @@ Header *openHandshake(int server_socket) {
 
     // receive message from the client to buffer
     memset(&buffer, 0, sizeof(buffer));
-    if ( (length = recv(server_socket, buffer, BUFFERSIZE, 0)) < 0 ) {
+    if ( (length = recv(user->socket, buffer, BUFFERSIZE, 0)) < 0 ) {
         printlog("Handshaking failed\n");
-        close(server_socket);
-        return NULL;
+        close(user->socket);
+        return -1;
     }
 
     header->string = calloc(length+1, 1);
@@ -54,12 +54,12 @@ Header *openHandshake(int server_socket) {
     printlog("%s", header->string);
 
     // parse http method
-    token = strtok(header->string, "\r\n");
+    token = strtok_r(header->string, "\r\n", &last);
     header->get = token;
-    if (strncasecmp("GET /", header->get, 5) != 0) {
-        printlog("Invalid header\n");
+    if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
+        printlog("Invalid method\n");
         printlog("%s", buffer);
-        return NULL;
+        return -1;
     }
 
     // save header attribute
@@ -84,6 +84,13 @@ Header *openHandshake(int server_socket) {
             printlog("Origin..");
             header->origin = token+8;
             printlog("-> Origin: %s\n", header->origin);
+
+            header->origin_len = strlen(header->origin);
+            if (strncasecmp("rainy.chat", header->origin + max(header->origin_len - 10, 0), 10) &&
+                strncasecmp("rainy.dev", header->origin + max(header->origin_len - 9, 0), 9)) {
+                printlog("Invalid origin\n");
+                return -1;
+            }
         } else if (strncasecmp("Sec-WebSocket-Key: ", token, 19) == 0) {
             // key
             printlog("Key..");
@@ -110,11 +117,17 @@ Header *openHandshake(int server_socket) {
             header->agent = token+12;
             printlog("-> User-Agent: %s\n", header->agent);
         }
-        token = strtok(NULL, "\r\n");
+        token = strtok_r(NULL, "\r\n", &last);
     }
 
     if (header->key == NULL) {
-        return NULL;
+        printlog("No websocket key specified\n");
+        return -1;
+    }
+
+    if (header->origin == NULL) {
+        printlog("No origin specified\n");
+        return -1;
     }
 
     // sha1, encode64
@@ -126,11 +139,12 @@ Header *openHandshake(int server_socket) {
     strcat(serv_handshake, "\r\n\r\n");
 
     // return handshake from the server
-    state = send(server_socket, serv_handshake, strlen(serv_handshake), 0);
+    state = send(user->socket, serv_handshake, strlen(serv_handshake), 0);
 
     free(sec_ws_accept);
 
-    return header;
+    user->header = header;
+    return 0;
 
 }
 
@@ -370,6 +384,7 @@ void sendStatus(List *user_list, User *added_user, User *removed_user) {
  *   return void
  */
 void removeNode(List *list, Node *this) {
+    printlog("Removing Node..\n");
     pop(list, this);
     sendStatus(list, NULL, this->data);
     removeUser(this->data);
@@ -383,8 +398,12 @@ void removeNode(List *list, Node *this) {
  *   return void
  */
 void removeUser(User *user) {
+    printlog("Removing User..\n");
     close(user->socket);
     free(user->name);
-    free(user->header->string);
+    if (user->header != NULL) {
+        free(user->header->string);
+        free(user->header);
+    }
     free(user);
 }

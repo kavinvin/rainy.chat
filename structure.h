@@ -21,6 +21,7 @@ typedef struct {
     char *connection;
     char *host;
     char *origin;
+    int origin_len;
     char *key;
     char *accept;
     long version;
