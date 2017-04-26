@@ -87,7 +87,7 @@ int openHandshake(User *user) {
 
             header->origin_len = strlen(header->origin);
             if (strncasecmp("rainy.chat", header->origin + max(header->origin_len - 10, 0), 10) &&
-                strncasecmp("rainy.dev", header->origin + max(header->origin_len - 10, 0), 10)) {
+                strncasecmp("rainy.dev", header->origin + max(header->origin_len - 9, 0), 9)) {
                 printlog("Invalid origin\n");
                 return -1;
             }
