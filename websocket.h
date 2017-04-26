@@ -19,7 +19,7 @@ typedef struct {
 } http_frame;
 
 char * getHandshakeKey(char *str);
-Header *openHandshake(int server_socket);
+int openHandshake(User *user);
 Header *newHeader();
 int wsSend(Node *this, http_frame *frame);
 int wsRecv(Node *this, http_frame *frame);

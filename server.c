@@ -147,8 +147,7 @@ void *initRecvSession(void *param) {
     user = acceptUser(server_socket);
 
     // web browser handshaking
-    user->header = openHandshake(user->socket);
-    if (user->header == NULL) {
+    if (openHandshake(user) < 0) {
         removeUser(user);
         pthread_exit(NULL);
     }
@@ -251,6 +250,7 @@ User *acceptUser(int server_socket) {
     user->ip_address = inet_ntoa(cli_addr.sin_addr);
     user->thread_id = pthread_self();
     user->name = NULL;
+    user->header = NULL;
     user->credit = 20;
 
     return user;
