@@ -37,6 +37,9 @@ int openHandshake(User *user) {
     char buffer[BUFFERSIZE], serv_handshake[300], *token, *last, *sec_ws_accept;
     int length, state;
     Header *header = newHeader();
+    if (header == NULL) {
+        return -1;
+    }
 
     printlog("-- Handshaking-- \n");
 
@@ -44,11 +47,14 @@ int openHandshake(User *user) {
     memset(&buffer, 0, sizeof(buffer));
     if ( (length = recv(user->socket, buffer, BUFFERSIZE, 0)) < 0 ) {
         printlog("Handshaking failed\n");
-        close(user->socket);
         return -1;
     }
 
     header->string = calloc(length+1, 1);
+    if (header->string == NULL) {
+        printlog("Memory allocation failed");
+        return -1;
+    }
     strncpy(header->string, buffer, length);
 
     printlog("%s", header->string);
@@ -58,7 +64,7 @@ int openHandshake(User *user) {
     header->get = token;
     if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
         printlog("Invalid method\n");
-        printlog("%s", buffer);
+        printlog("%s", header->get);
         return -1;
     }
 
@@ -156,6 +162,10 @@ int openHandshake(User *user) {
  */
 Header *newHeader() {
     Header *header = malloc(sizeof(Header));
+    if (header->string == NULL) {
+        printlog("Memory allocation failed");
+        return NULL;
+    }
     if (header != NULL) {
         // header->string = NULL;
         header->string = NULL;
@@ -282,7 +292,11 @@ int wsRecv(Node *this, http_frame *frame) {
     }
 
     // allocate memory for the message
-    frame->message = malloc(frame->size+1); // warning: memory leakage
+    frame->message = malloc(frame->size+1); // warning: memory must be freed
+    if (frame->message == NULL) {
+        printlog("Memory allocation failed");
+        return -1;
+    }
     memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
 
