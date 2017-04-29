@@ -182,6 +182,7 @@ void *initRecvSession(void *param) {
 
     // append user to chatroom
     append(room->users, this);
+    room->users->from = room;
 
     // send online status to all user
     sendStatus(room->users, user, NULL);
@@ -205,11 +206,7 @@ void *initRecvSession(void *param) {
 
     while (1) {
         // receive message from the user
-        message = getMessage(room->users, this, &frame);
-
-        // broadcast message to all users
-        broadcast(room->users, this, message, OTHER);
-        free(message);
+        getMessage(room, this, &frame);
     }
 
     removeNode(room->users, this);
@@ -333,30 +330,50 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
  *   listen for a message from client
  *   return 0 if success, -1 if failied
  */
-char *getMessage(List *user_list, Node *this, http_frame *frame) {
+int getMessage(Node *room, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
-    char *message;
+    char *message, *body;
+    int flag;
     json_t *json;
     json_error_t json_err;
 
     // receive message from user
     memset(frame, 0, sizeof(*frame));
     if (wsRecv(this, frame) != SUCCESS) {
-        removeNode(user_list, this);
+        removeNode(room->users, this);
         pthread_exit(NULL);
     };
-    readMessage(user_list, this, frame->message); // mutex
 
-    // prepare broadcasting data to all users in the room
+    flag = readMessage(room->users, this, frame->message, &body); // mutex
+
+    // prepare broadcasting data to users
     json = json_pack("{s:i, s:s, s:s, s:s}",
                      "id", user->socket,
                      "type", "message",
                      "username", user->name,
-                     "message", frame->message);
-    message = json_dumps(json, JSON_COMPACT);
+                     "message", body);
+
+    if (flag & COMMAND_MESSAGE) {
+        json_object_set_new(json, "flag", json_integer(FLAG_PEER));
+        message = json_dumps(json, JSON_COMPACT);
+        broadcast(room->users, this, message, OTHER);
+        free(message);
+    }
+
+    if (flag & COMMAND_PUBLIC) {
+        json_object_set_new(json, "flag", json_integer(FLAG_ABOVE));
+        message = json_dumps(json, JSON_COMPACT);
+        broadcast(room->sublist, this, message, RECUR);
+        free(message);
+    }
+
     json_decref(json);
     free(frame->message);
-    return message;
+
+    // broadcast message to all users
+
+
+    return 0;
 }
 
 /**
@@ -381,21 +398,23 @@ void *initServerSession(void *server_socket_param) {
  *   read a message received from client
  *   return 0 if it's a command, 1 if it's a text message
  */
-int readMessage(List *user_list, Node *this, char *message) {
+int readMessage(List *user_list, Node *this, char *message, char **body) {
     User *user = (User*)this->data;
+    int flag;
     if (*message == '/') {
-        // command mode
-        clientRequest(user_list, this, message);
-        return 0;
+        // is command
+        flag = clientRequest(user_list, this, message, body);
     } else {
-        // message mode
-        printlog("Message received from #%d: %s (%s)\nMessage: %s\n",
-                 user->socket,
-                 user->name,
-                 user->ip_address,
-                 message);
-        return 1;
+        flag = COMMAND_MESSAGE;
+        *body = message;
     }
+    // message log
+    printlog("Message received from #%d: %s (%s)\nMessage: %s\n",
+             user->socket,
+             user->name,
+             user->ip_address,
+             message);
+    return flag;
 }
 
 /**
@@ -404,14 +423,22 @@ int readMessage(List *user_list, Node *this, char *message) {
  *   search for available command for the user
  *   return void
  */
-void clientRequest(List *user_list, Node *this, char *command) {
+int clientRequest(List *user_list, Node *this, char *command, char **body) {
+    int flag = 0;
     if (strcmp(command, "/exit") == 0) {
-        printlog("Exited\n");
+        flag |= COMMAND_EXIT;
+        printlog("Command: Exit\n");
         removeNode(user_list, this);
         pthread_exit(NULL);
+    } else if (strncmp(command, "/public ", 8) == 0) {
+        flag |= COMMAND_MESSAGE;
+        flag |= COMMAND_PUBLIC;
+        *body = command + 8;
+        printlog("Command: Public message\n");
     } else {
         printlog("Client command not found\n");
     }
+    return flag;
 }
 
 /**

@@ -52,7 +52,7 @@ int openHandshake(User *user) {
 
     header->string = calloc(length+1, 1);
     if (header->string == NULL) {
-        printlog("Memory allocation failed");
+        printlog("Memory allocation failed: %s\n", strerror(errno));
         return -1;
     }
     strncpy(header->string, buffer, length);
@@ -162,25 +162,22 @@ int openHandshake(User *user) {
  */
 Header *newHeader() {
     Header *header = malloc(sizeof(Header));
-    if (header->string == NULL) {
-        printlog("Memory allocation failed");
+    if (header == NULL) {
+        printlog("Memory allocation failed: %s\n", strerror(errno));
         return NULL;
     }
-    if (header != NULL) {
-        // header->string = NULL;
-        header->string = NULL;
-        header->get = NULL;
-        header->upgrade = NULL;
-        header->connection = NULL;
-        header->host = NULL;
-        header->origin = NULL;
-        header->key = NULL;
-        header->accept = NULL;
-        header->version = 0;
-        header->protocol = NULL;
-        header->extension = NULL;
-        header->agent = NULL;
-    }
+    header->string = NULL;
+    header->get = NULL;
+    header->upgrade = NULL;
+    header->connection = NULL;
+    header->host = NULL;
+    header->origin = NULL;
+    header->key = NULL;
+    header->accept = NULL;
+    header->version = 0;
+    header->protocol = NULL;
+    header->extension = NULL;
+    header->agent = NULL;
     return header;
 }
 
@@ -294,7 +291,7 @@ int wsRecv(Node *this, http_frame *frame) {
     // allocate memory for the message
     frame->message = malloc(frame->size+1); // warning: memory must be freed
     if (frame->message == NULL) {
-        printlog("Memory allocation failed");
+        printlog("Memory allocation failed: %s\n", strerror(errno));
         return -1;
     }
     memset(frame->message, '\0', frame->size+1);
@@ -320,9 +317,18 @@ void broadcast(List *user_list, Node *this, char *message, int flag) {
     frame.opcode = 129;
     frame.message = message;
     frame.size = strlen(frame.message);
+    if (flag == RECUR) {
+        if (map(user_list->head, sendMessage, &frame, flag) < 0) {
+            // even if it named user_list but it's room list..
+            removeNode(user_list, this);
+            pthread_exit(NULL);
+        }
+        return;
+    }
     if (map(this, sendMessage, &frame, flag) < 0) {
         removeNode(user_list, this);
         pthread_exit(NULL);
+        return;
     }
 }
 

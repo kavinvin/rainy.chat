@@ -13,6 +13,7 @@
 #define ALL 0
 #define SELF 1
 #define OTHER 2
+#define RECUR 3
 
 typedef struct {
     char *string;
