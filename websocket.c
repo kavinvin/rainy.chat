@@ -44,7 +44,7 @@ int openHandshake(User *user) {
     printlog("-- Handshaking-- \n");
 
     // receive message from the client to buffer
-    memset(&buffer, 0, sizeof(buffer));
+    memset(&buffer, 0, BUFFERSIZE);
     if ( (length = recv(user->socket, buffer, BUFFERSIZE, 0)) < 0 ) {
         printlog("Handshaking failed\n");
         return -1;
@@ -55,6 +55,7 @@ int openHandshake(User *user) {
         printlog("Memory allocation failed: %s\n", strerror(errno));
         return -1;
     }
+    printlog("Copying buffer to header\n");
     strncpy(header->string, buffer, length);
 
     printlog("%s", header->string);
@@ -64,7 +65,7 @@ int openHandshake(User *user) {
     header->get = token;
     if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
         printlog("Invalid method\n");
-        printlog("%s", header->get);
+        printlog("%s\n", header->get);
         return -1;
     }
 
