@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -std=c11
+CFLAGS = -std=c11 -Isrc/include
 OBJECTS = main.o server.o room.o socket.o websocket.o helper.o base64.o structure.o error.o
 EXEC = Rainy.Chat
-VPATH = src
+VPATH = src src/include
 
 $(EXEC): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $(EXEC) -lcrypto -ljansson -pthread
