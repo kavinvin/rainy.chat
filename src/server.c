@@ -450,6 +450,11 @@ int clientRequest(List *user_list, Node *this, char *command, char **body) {
         flag |= COMMAND_RAIN;
         *body = command;
         printlog("Command: Rain\n");
+    } else if (strncmp(command, "/encrypt", 9) == 0) {
+        flag |= COMMAND_PEER;
+        flag |= COMMAND_ENCRYPT;
+        *body = command;
+        printlog("Command: Rain\n");
     } else {
         printlog("Client command not found\n");
     }

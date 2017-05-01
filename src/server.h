@@ -15,7 +15,8 @@ enum flag {
     COMMAND_MESSAGE = 4,
     COMMAND_FROMPEER = 8,
     COMMAND_FROMABOVE = 16,
-    COMMAND_RAIN = 32
+    COMMAND_RAIN = 32,
+    COMMAND_ENCRYPT = 64
 };
 
 int serveRainyChat(char *host, char *port);
