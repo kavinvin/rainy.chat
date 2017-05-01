@@ -9,16 +9,13 @@
 
 #include "websocket.h"
 
-enum command {
-    COMMAND_MESSAGE = 1,
-    COMMAND_PUBLIC = 2,
-    COMMAND_EXIT = 4
-};
-
 enum flag {
-    FLAG_PEER = 1,
-    FLAG_ABOVE = 2,
-    FLAG_GLOBAL = 4
+    COMMAND_PEER = 1,
+    COMMAND_PUBLIC = 2,
+    COMMAND_MESSAGE = 4,
+    COMMAND_FROMPEER = 8,
+    COMMAND_FROMABOVE = 16,
+    COMMAND_RAIN = 32
 };
 
 int serveRainyChat(char *host, char *port);

@@ -45,6 +45,7 @@ struct user_t {
 
 struct node_t {
     char name[64];
+    char prefix[256];
     void *data;
     struct node_t *next;
     struct node_t *prev;

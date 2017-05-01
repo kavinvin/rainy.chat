@@ -333,7 +333,7 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
 int getMessage(Node *room, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     char *message, *body;
-    int flag;
+    int flag, cli_flag;
     json_t *json;
     json_error_t json_err;
 
@@ -347,25 +347,34 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
     flag = readMessage(room->users, this, frame->message, &body); // mutex
 
     // prepare broadcasting data to users
-    json = json_pack("{s:i, s:s, s:s, s:s}",
+    json = json_pack("{s:i, s:s, s:s, s:s, s:s}",
                      "id", user->socket,
                      "type", "message",
                      "username", user->name,
-                     "message", body);
+                     "message", body,
+                     "roomname", room->prefix);
 
-    if (flag & COMMAND_MESSAGE) {
-        json_object_set_new(json, "flag", json_integer(FLAG_PEER));
+    if (flag & COMMAND_PEER) {
+        cli_flag = 0;
+        cli_flag |= flag;
+        cli_flag |= COMMAND_FROMPEER;
+        json_object_set_new(json, "flag", json_integer(cli_flag));
         message = json_dumps(json, JSON_COMPACT);
         broadcast(room->users, this, message, OTHER);
         free(message);
     }
 
     if (flag & COMMAND_PUBLIC) {
-        json_object_set_new(json, "flag", json_integer(FLAG_ABOVE));
+        cli_flag = 0;
+        cli_flag |= flag;
+        cli_flag |= COMMAND_FROMABOVE;
+        json_object_set_new(json, "flag", json_integer(cli_flag));
         message = json_dumps(json, JSON_COMPACT);
         broadcast(room->sublist, this, message, RECUR);
         free(message);
     }
+
+    printf("cli_flag: %d\n", cli_flag);
 
     json_decref(json);
     free(frame->message);
@@ -405,7 +414,8 @@ int readMessage(List *user_list, Node *this, char *message, char **body) {
         // is command
         flag = clientRequest(user_list, this, message, body);
     } else {
-        flag = COMMAND_MESSAGE;
+        flag |= COMMAND_PEER;
+        flag |= COMMAND_MESSAGE;
         *body = message;
     }
     // message log
@@ -425,16 +435,22 @@ int readMessage(List *user_list, Node *this, char *message, char **body) {
  */
 int clientRequest(List *user_list, Node *this, char *command, char **body) {
     int flag = 0;
-    if (strcmp(command, "/exit") == 0) {
-        flag |= COMMAND_EXIT;
+    if (strncmp(command, "/exit", 5) == 0) {
         printlog("Command: Exit\n");
         removeNode(user_list, this);
         pthread_exit(NULL);
     } else if (strncmp(command, "/public ", 8) == 0) {
-        flag |= COMMAND_MESSAGE;
+        flag |= COMMAND_PEER;
         flag |= COMMAND_PUBLIC;
+        flag |= COMMAND_MESSAGE;
         *body = command + 8;
         printlog("Command: Public message\n");
+    } else if (strncmp(command, "/rain", 5) == 0) {
+        flag |= COMMAND_PEER;
+        flag |= COMMAND_PUBLIC;
+        flag |= COMMAND_RAIN;
+        *body = command;
+        printlog("Command: Rain\n");
     } else {
         printlog("Client command not found\n");
     }

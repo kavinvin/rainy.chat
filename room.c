@@ -14,7 +14,8 @@
  *   return room created
  */
 List *getRoom(List *global, char *last) {
-    char *name;
+    char *name, prefix[256];
+    strcpy(prefix, last);
     name = strtok_r(NULL, ".", &last);
     if (strcmp(name, "rainy") == 0) {
         return global;
@@ -27,6 +28,7 @@ List *getRoom(List *global, char *last) {
     if (room == NULL) {
         room = create(NULL);
         strcpy(room->name, name);
+        strcpy(room->prefix, prefix);
         room->superlist = rooms;
         room->sublist = newList();
         room->sublist->from = room;
