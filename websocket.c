@@ -37,18 +37,25 @@ int openHandshake(User *user) {
     char buffer[BUFFERSIZE], serv_handshake[300], *token, *last, *sec_ws_accept;
     int length, state;
     Header *header = newHeader();
+    if (header == NULL) {
+        return -1;
+    }
 
     printlog("-- Handshaking-- \n");
 
     // receive message from the client to buffer
-    memset(&buffer, 0, sizeof(buffer));
+    memset(&buffer, 0, BUFFERSIZE);
     if ( (length = recv(user->socket, buffer, BUFFERSIZE, 0)) < 0 ) {
         printlog("Handshaking failed\n");
-        close(user->socket);
         return -1;
     }
 
     header->string = calloc(length+1, 1);
+    if (header->string == NULL) {
+        printlog("Memory allocation failed: %s\n", strerror(errno));
+        return -1;
+    }
+    printlog("Copying buffer to header\n");
     strncpy(header->string, buffer, length);
 
     printlog("%s", header->string);
@@ -58,7 +65,7 @@ int openHandshake(User *user) {
     header->get = token;
     if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
         printlog("Invalid method\n");
-        printlog("%s", buffer);
+        printlog("%s\n", header->get);
         return -1;
     }
 
@@ -156,21 +163,22 @@ int openHandshake(User *user) {
  */
 Header *newHeader() {
     Header *header = malloc(sizeof(Header));
-    if (header != NULL) {
-        // header->string = NULL;
-        header->string = NULL;
-        header->get = NULL;
-        header->upgrade = NULL;
-        header->connection = NULL;
-        header->host = NULL;
-        header->origin = NULL;
-        header->key = NULL;
-        header->accept = NULL;
-        header->version = 0;
-        header->protocol = NULL;
-        header->extension = NULL;
-        header->agent = NULL;
+    if (header == NULL) {
+        printlog("Memory allocation failed: %s\n", strerror(errno));
+        return NULL;
     }
+    header->string = NULL;
+    header->get = NULL;
+    header->upgrade = NULL;
+    header->connection = NULL;
+    header->host = NULL;
+    header->origin = NULL;
+    header->key = NULL;
+    header->accept = NULL;
+    header->version = 0;
+    header->protocol = NULL;
+    header->extension = NULL;
+    header->agent = NULL;
     return header;
 }
 
@@ -282,7 +290,11 @@ int wsRecv(Node *this, http_frame *frame) {
     }
 
     // allocate memory for the message
-    frame->message = malloc(frame->size+1); // warning: memory leakage
+    frame->message = malloc(frame->size+1); // warning: memory must be freed
+    if (frame->message == NULL) {
+        printlog("Memory allocation failed: %s\n", strerror(errno));
+        return -1;
+    }
     memset(frame->message, '\0', frame->size+1);
     memcpy(frame->message, buffer + skip, frame->size);
 
@@ -306,9 +318,18 @@ void broadcast(List *user_list, Node *this, char *message, int flag) {
     frame.opcode = 129;
     frame.message = message;
     frame.size = strlen(frame.message);
+    if (flag == RECUR) {
+        if (map(user_list->head, sendMessage, &frame, flag) < 0) {
+            // even if it named user_list but it's room list..
+            removeNode(user_list, this);
+            pthread_exit(NULL);
+        }
+        return;
+    }
     if (map(this, sendMessage, &frame, flag) < 0) {
         removeNode(user_list, this);
         pthread_exit(NULL);
+        return;
     }
 }
 

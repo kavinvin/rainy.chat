@@ -105,6 +105,7 @@ Node * pop(List *list, Node *this) {
     if (this == list->head) {
         // switch head before pop
         list->head = this->next;
+        if (this == this->next) list->head = NULL;
     }
 
     Node *prev = this->prev;
@@ -124,10 +125,6 @@ Node * pop(List *list, Node *this) {
     this->prev = NULL;
 
     list->len--;
-    if (list->len == 0) {
-        // assign null pointer to head
-        list->head = NULL;
-    }
 
     // unlock mutex
     pthread_mutex_unlock(&this->lock);
@@ -172,6 +169,15 @@ int map(Node *this, callback function, void *argument, int flag) {
             }
             cursor = cursor->next;
         }
+    } else if (flag == RECUR) {
+        if (this == NULL) {
+            return 0;
+        }
+        do {
+            map(cursor->users->head, function, argument, ALL);
+            map(cursor->sublist->head, function, argument, flag);
+            cursor = cursor->next;
+        } while (cursor != this && cursor != NULL);
     }
     return 0;
 }
