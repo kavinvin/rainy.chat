@@ -176,7 +176,7 @@ void *initRecvSession(void *param) {
     // check user remaining credit
     // if less than 0, cut the connection
     if (!user->credit) {
-        removeNode(room->users, this);
+        removeNode(this->superlist, this);
         pthread_exit(NULL);
     }
 
@@ -193,15 +193,13 @@ void *initRecvSession(void *param) {
     tree(global, json_rooms, 0);
 
     // dumps to string and broadcast to global user
-    json_rooms_envelop = json_object();
-    // json_object_set_new(json_rooms_envelop, "type", json_string("rooms"));
-    // json_object_set_new(json_rooms_envelop, "rooms", json_rooms);
     json_rooms_envelop = json_pack("{s:s, s:o?}",
                                    "type", "rooms",
                                    "rooms", json_rooms);
     json_rooms_string = json_dumps(json_rooms_envelop, JSON_COMPACT);
     printf("%s\n", json_rooms_string);
-    broadcast(room->users, room->users->head, json_rooms_string, ALL);
+    broadcast(global, this, json_rooms_string, RECUR);
+    json_decref(json_rooms);
     free(json_rooms_string);
 
     while (1) {
@@ -209,7 +207,7 @@ void *initRecvSession(void *param) {
         getMessage(room, this, &frame);
     }
 
-    removeNode(room->users, this);
+    removeNode(this->superlist, this);
     pthread_exit(NULL);
 }
 
@@ -340,7 +338,7 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
     // receive message from user
     memset(frame, 0, sizeof(*frame));
     if (wsRecv(this, frame) != SUCCESS) {
-        removeNode(room->users, this);
+        removeNode(this->superlist, this);
         pthread_exit(NULL);
     };
 
@@ -414,6 +412,7 @@ int readMessage(List *user_list, Node *this, char *message, char **body) {
         // is command
         flag = clientRequest(user_list, this, message, body);
     } else {
+        flag = 0;
         flag |= COMMAND_PEER;
         flag |= COMMAND_MESSAGE;
         *body = message;
@@ -437,7 +436,7 @@ int clientRequest(List *user_list, Node *this, char *command, char **body) {
     int flag = 0;
     if (strncmp(command, "/exit", 5) == 0) {
         printlog("Command: Exit\n");
-        removeNode(user_list, this);
+        removeNode(this->superlist, this);
         pthread_exit(NULL);
     } else if (strncmp(command, "/public ", 8) == 0) {
         flag |= COMMAND_PEER;

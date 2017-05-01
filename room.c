@@ -29,7 +29,6 @@ List *getRoom(List *global, char *last) {
         room = create(NULL);
         strcpy(room->name, name);
         strcpy(room->prefix, prefix);
-        room->superlist = rooms;
         room->sublist = newList();
         room->sublist->from = room;
         room->users = newList();

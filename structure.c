@@ -49,6 +49,7 @@ Node * append(List *list, Node *this) {
         // link to self
         this->next = this;
         this->prev = this;
+        this->superlist = list;
         this->attached = 1;
         list->len++;
         printlog("List length: %d\n", list->len);
@@ -69,6 +70,7 @@ Node * append(List *list, Node *this) {
     // relink neighbor node
     this->next = first;
     this->prev = last;
+    this->superlist = list;
     first->prev = this;
     last->next = this;
     list->len++;
@@ -147,6 +149,9 @@ Node * pop(List *list, Node *this) {
  */
 int map(Node *this, callback function, void *argument, int flag) {
     Node *cursor = this;
+    if (this == NULL) {
+        return 0;
+    }
     if (flag == ALL) {
         // to all node in the list
         do {
@@ -170,9 +175,6 @@ int map(Node *this, callback function, void *argument, int flag) {
             cursor = cursor->next;
         }
     } else if (flag == RECUR) {
-        if (this == NULL) {
-            return 0;
-        }
         do {
             map(cursor->users->head, function, argument, ALL);
             map(cursor->sublist->head, function, argument, flag);
@@ -225,6 +227,9 @@ json_t *tree(List *list, json_t *json, int flag) {
             printlog("|─ %s\n", cursor->name);
         }
         json_t *json_child = json_object();
+        json_t *json_data = json_pack("{s:i}",
+                                      "user_len", cursor->users->len);
+        json_object_set_new(json_child, ".", json_data);
         json_object_set_new(json, cursor->name, json_child);
         tree(cursor->sublist, json_child, flag);
         cursor = cursor->next;

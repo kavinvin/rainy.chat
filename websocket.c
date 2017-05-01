@@ -321,13 +321,13 @@ void broadcast(List *user_list, Node *this, char *message, int flag) {
     if (flag == RECUR) {
         if (map(user_list->head, sendMessage, &frame, flag) < 0) {
             // even if it named user_list but it's room list..
-            removeNode(user_list, this);
+            removeNode(this->superlist, this);
             pthread_exit(NULL);
         }
         return;
     }
     if (map(this, sendMessage, &frame, flag) < 0) {
-        removeNode(user_list, this);
+        removeNode(this->superlist, this);
         pthread_exit(NULL);
         return;
     }
