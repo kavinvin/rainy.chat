@@ -237,7 +237,7 @@ int wsSend(Node *this, http_frame *frame) {
 int wsRecv(Node *this, http_frame *frame) {
     User *user = (User*)this->data;
     int opcode, length, hasmask, skip;
-    char buffer[BUFFERSIZE], mask[4];
+    char buffer[BUFFERSIZE];
     memset(buffer, '\0', BUFFERSIZE);
     if (recv(user->socket, buffer, BUFFERSIZE, 0) <= 0) {
         printlog("%s\n", "Error on receiving message");
@@ -340,7 +340,6 @@ void broadcast(List *user_list, Node *this, char *message, int flag) {
  *   return void
  */
 int sendMessage(Node *this, void *frame_void) {
-    User *user = (User*)(this->data);
     http_frame *frame = (http_frame*)frame_void;
     if (wsSend(this, frame) < 0) {
         return -1;
@@ -356,7 +355,6 @@ int sendMessage(Node *this, void *frame_void) {
  */
 void sendStatus(List *user_list, User *added_user, User *removed_user) {
     json_t *json, *username, *username_list;
-    json_error_t json_err;
     User *user;
     Node *cursor;
     char *message;

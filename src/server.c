@@ -139,7 +139,7 @@ void *initRecvSession(void *param) {
     Node *this;
 
     // message buffer for communication
-    char *message, *token, *subdomain[128], *last, *json_rooms_string;
+    char *last, *json_rooms_string;
     http_frame frame;
     json_t *json_rooms, *json_rooms_envelop;
 
@@ -333,7 +333,6 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
     char *message, *body;
     int flag, cli_flag;
     json_t *json;
-    json_error_t json_err;
 
     // receive message from user
     memset(frame, 0, sizeof(*frame));
