@@ -55,7 +55,7 @@ int openHandshake(User *user) {
         printlog("Memory allocation failed: %s\n", strerror(errno));
         return -1;
     }
-    printlog("Copying buffer to header\n");
+    printlog("Copying buffer to header, length: %d\n", length);
     strncpy(header->string, buffer, length);
 
     printlog("%s", header->string);
@@ -147,6 +147,9 @@ int openHandshake(User *user) {
 
     // return handshake from the server
     state = send(user->socket, serv_handshake, strlen(serv_handshake), 0);
+    if (state < 0) {
+        return -1;
+    }
 
     free(sec_ws_accept);
 
