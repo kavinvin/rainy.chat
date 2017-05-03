@@ -366,6 +366,7 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
             cli_flag |= flag;
             cli_flag |= COMMAND_BOT;
             json_object_set_new(json, "flag", json_integer(cli_flag));
+            json_object_set_new(json, "id", json_integer(-1));
             json_object_set_new(json, "message", json_string(bot_response));
             message = json_dumps(json, JSON_COMPACT);
             broadcast(room->users, this, message, ALL);
