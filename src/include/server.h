@@ -8,6 +8,7 @@
 #define SERVER_H_
 
 #include "websocket.h"
+#include "rainybot.h"
 
 enum flag {
     COMMAND_PEER = 1,
@@ -16,7 +17,8 @@ enum flag {
     COMMAND_FROMPEER = 8,
     COMMAND_FROMABOVE = 16,
     COMMAND_RAIN = 32,
-    COMMAND_ENCRYPT = 64
+    COMMAND_ENCRYPT = 64,
+    COMMAND_BOT = 128
 };
 
 int serveRainyChat(char *host, char *port);

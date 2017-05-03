@@ -330,7 +330,7 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
  */
 int getMessage(Node *room, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
-    char *message, *body;
+    char *message, *body, bot_response[400];
     int flag, cli_flag;
     json_t *json;
 
@@ -352,6 +352,7 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
                      "roomname", room->prefix);
 
     if (flag & COMMAND_PEER) {
+        // normal conversation
         cli_flag = 0;
         cli_flag |= flag;
         cli_flag |= COMMAND_FROMPEER;
@@ -359,6 +360,18 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
         message = json_dumps(json, JSON_COMPACT);
         broadcast(room->users, this, message, OTHER);
         free(message);
+
+        if (rainyBot(user->name, frame->message, bot_response) == 0) {
+            cli_flag = 0;
+            cli_flag |= flag;
+            cli_flag |= COMMAND_BOT;
+            json_object_set_new(json, "flag", json_integer(cli_flag));
+            json_object_set_new(json, "message", json_string(bot_response));
+            message = json_dumps(json, JSON_COMPACT);
+            broadcast(room->users, this, message, ALL);
+            free(message);
+        }
+
     }
 
     if (flag & COMMAND_PUBLIC) {
