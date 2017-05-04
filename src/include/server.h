@@ -21,6 +21,8 @@ enum flag {
     COMMAND_BOT = 128
 };
 
+#define PROB 0.3
+
 int serveRainyChat(char *host, char *port);
 void parseAddr(int argc, char *argv[], char **host, char **port);
 int initMutex(int count, ...);
