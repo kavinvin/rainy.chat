@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -std=c11
-OBJECTS = main.o server.o room.o socket.o websocket.o helper.o base64.o structure.o error.o
+CFLAGS = -std=c11 -Isrc/include -Wall -g
+OBJECTS = main.o server.o room.o rainybot.o socket.o websocket.o helper.o base64.o structure.o error.o
 EXEC = Rainy.Chat
-VPATH = src
+VPATH = src src/include
 
 $(EXEC): $(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) -o $(EXEC) -lcrypto -ljansson -pthread
@@ -10,10 +10,13 @@ $(EXEC): $(OBJECTS)
 main.o: main.c server.o
 	$(CC) $(CFLAGS) -c $<
 
-server.o: server.c server.h websocket.o room.o
+server.o: server.c server.h websocket.o room.o rainybot.o
 	$(CC) $(CFLAGS) -c $<
 
 room.o: room.c room.h structure.o
+	$(CC) $(CFLAGS) -c $<
+
+rainybot.o: rainybot.c rainybot.h includes.h
 	$(CC) $(CFLAGS) -c $<
 
 websocket.o: websocket.c websocket.h socket.o base64.o

@@ -14,7 +14,7 @@
  *   return socket descriptor, -1 if failed to create socket
  */
 int initSocket(char *host, char *port) {
-    int sockfd, state, option=1;
+    int sockfd, option=1;
     struct sockaddr_in server_address;
 
     // create socket

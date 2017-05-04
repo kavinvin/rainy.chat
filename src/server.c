@@ -30,6 +30,9 @@ int serveRainyChat(char *host, char *port) {
     List *global = newList();
     global->level = 0;
 
+    // user time in second as random seed
+    srand(time(NULL));
+
     // prepare mutex
     initMutex(2, &mutex_log, &mutex_accept);
 
@@ -139,7 +142,7 @@ void *initRecvSession(void *param) {
     Node *this;
 
     // message buffer for communication
-    char *message, *token, *subdomain[128], *last, *json_rooms_string;
+    char *last, *json_rooms_string;
     http_frame frame;
     json_t *json_rooms, *json_rooms_envelop;
 
@@ -330,10 +333,9 @@ int validateUser(List *user_list, Node *this, http_frame *frame) {
  */
 int getMessage(Node *room, Node *this, http_frame *frame) {
     User *user = (User*)this->data;
-    char *message, *body;
+    char *message, *body, bot_response[400];
     int flag, cli_flag;
     json_t *json;
-    json_error_t json_err;
 
     // receive message from user
     memset(frame, 0, sizeof(*frame));
@@ -353,6 +355,7 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
                      "roomname", room->prefix);
 
     if (flag & COMMAND_PEER) {
+        // normal conversation
         cli_flag = 0;
         cli_flag |= flag;
         cli_flag |= COMMAND_FROMPEER;
@@ -360,6 +363,20 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
         message = json_dumps(json, JSON_COMPACT);
         broadcast(room->users, this, message, OTHER);
         free(message);
+
+        if (decide(0.05)) {
+            if (rainyBot(user->name, frame->message, bot_response) == 0) {
+                cli_flag = 0;
+                cli_flag |= flag;
+                cli_flag |= COMMAND_BOT;
+                json_object_set_new(json, "flag", json_integer(cli_flag));
+                json_object_set_new(json, "id", json_integer(-1));
+                json_object_set_new(json, "message", json_string(bot_response));
+                message = json_dumps(json, JSON_COMPACT);
+                broadcast(room->users, this, message, ALL);
+                free(message);
+            }
+        }
     }
 
     if (flag & COMMAND_PUBLIC) {

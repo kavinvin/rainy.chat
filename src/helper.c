@@ -160,3 +160,11 @@ void printtime(void) {
     fclose(logfile);
     pthread_mutex_unlock(&mutex_log);
 }
+
+int decide(float prob) {
+    if (prob > rand() % 20 / (float)20) {
+        return 1;
+    } else {
+        return 0;
+    }
+}

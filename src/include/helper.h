@@ -31,5 +31,6 @@ void strLower(char *string);
 uint64_t ntohl64(uint64_t value);
 void printlog(char *format, ...);
 void printtime(void);
+int decide(float prob);
 
 #endif
