@@ -30,6 +30,9 @@ int serveRainyChat(char *host, char *port) {
     List *global = newList();
     global->level = 0;
 
+    // user time in second as random seed
+    srand(time(NULL));
+
     // prepare mutex
     initMutex(2, &mutex_log, &mutex_accept);
 
@@ -361,18 +364,19 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
         broadcast(room->users, this, message, OTHER);
         free(message);
 
-        if (rainyBot(user->name, frame->message, bot_response) == 0) {
-            cli_flag = 0;
-            cli_flag |= flag;
-            cli_flag |= COMMAND_BOT;
-            json_object_set_new(json, "flag", json_integer(cli_flag));
-            json_object_set_new(json, "id", json_integer(-1));
-            json_object_set_new(json, "message", json_string(bot_response));
-            message = json_dumps(json, JSON_COMPACT);
-            broadcast(room->users, this, message, ALL);
-            free(message);
+        if (decide(0.05)) {
+            if (rainyBot(user->name, frame->message, bot_response) == 0) {
+                cli_flag = 0;
+                cli_flag |= flag;
+                cli_flag |= COMMAND_BOT;
+                json_object_set_new(json, "flag", json_integer(cli_flag));
+                json_object_set_new(json, "id", json_integer(-1));
+                json_object_set_new(json, "message", json_string(bot_response));
+                message = json_dumps(json, JSON_COMPACT);
+                broadcast(room->users, this, message, ALL);
+                free(message);
+            }
         }
-
     }
 
     if (flag & COMMAND_PUBLIC) {
