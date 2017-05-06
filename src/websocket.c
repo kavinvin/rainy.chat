@@ -53,7 +53,7 @@ int openHandshake(User *user) {
         printlog("Didn't receive any message from client");
     }
 
-    header->string = calloc(length+1, sizeof(char));
+    header->string = calloc(length+1, 1);
     if (header->string == NULL) {
         printlog("Memory allocation failed: %s\n", strerror(errno));
         return -1;
