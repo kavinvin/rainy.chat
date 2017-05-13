@@ -364,7 +364,7 @@ int getMessage(Node *room, Node *this, http_frame *frame) {
         broadcast(room->users, this, message, OTHER);
         free(message);
 
-        if (decide(0.05)) {
+        if (decide(PROB)) {
             if (rainyBot(user->name, frame->message, bot_response) == 0) {
                 cli_flag = 0;
                 cli_flag |= flag;
