@@ -49,8 +49,9 @@ int openHandshake(User *user) {
         printlog("Handshaking failed\n");
         return -1;
     }
-    if (length <= 0) {
-        printlog("Didn't receive any message from client");
+    if (length == 0) {
+        printlog("Didn't receive any message from client\n");
+        return -1;
     }
 
     header->string = calloc(length+1, 1);
