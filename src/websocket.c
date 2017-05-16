@@ -54,12 +54,13 @@ int openHandshake(User *user) {
         return -1;
     }
 
-    header->string = calloc(length+1, 1);
+    header->string = calloc(length+1, sizeof(char));
     if (header->string == NULL) {
         printlog("Memory allocation failed: %s\n", strerror(errno));
         return -1;
     }
     printlog("Copying buffer to header, length: %d\n", length);
+    printlog("Actual strlen length: %d\n", strlen(buffer));
     strncpy(header->string, buffer, length);
 
     printlog("%s", header->string);
