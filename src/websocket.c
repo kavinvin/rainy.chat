@@ -59,11 +59,13 @@ int openHandshake(User *user) {
         printlog("Memory allocation failed: %s\n", strerror(errno));
         return -1;
     }
+
+    printlog("Header from buffer\n%s", buffer);
     printlog("Copying buffer to header, length: %d\n", length);
     printlog("Actual strlen length: %d\n", strlen(buffer));
     strncpy(header->string, buffer, length);
 
-    printlog("%s", header->string);
+    printlog("Header from header->string\n%s", header->string);
 
     // parse http method
     token = strtok_r(header->string, "\r\n", &last);
