@@ -60,7 +60,7 @@ int openHandshake(User *user) {
         return -1;
     }
 
-    printlog("Header from buffer\n%s", buffer);
+    printlog("Header from buffer:\n%s", buffer);
     printlog("Copying buffer to header, length: %d\n", length);
     printlog("Actual strlen length: %d\n", strlen(buffer));
     strncpy(header->string, buffer, length);
@@ -69,6 +69,10 @@ int openHandshake(User *user) {
 
     // parse http method
     token = strtok_r(header->string, "\r\n", &last);
+    if (token == NULL) {
+        printlog("Error blank header\n");
+        return -1;
+    }
     header->get = token;
     if (strncasecmp("GET / HTTP/1.1", header->get, 14) != 0) {
         printlog("Invalid method\n");
