@@ -84,24 +84,16 @@ int openHandshake(User *user) {
     while (token != NULL) {
         if (strncasecmp("Upgrade: ", token, 9) == 0) {
             // Upgrade
-            printlog("Upgrade..");
             header->upgrade = token+9;
-            printlog("-> Upgrade: %s\n", header->upgrade);
         } else if (strncasecmp("Connection: ", token, 12) == 0) {
             // connection
-            printlog("Connection..");
             header->connection = token+12;
-            printlog("-> Connection: %s\n", header->connection);
         } else if (strncasecmp("Host: ", token, 6) == 0) {
             // host
-            printlog("Host...");
             header->host = token+6;
-            printlog("-> Host: %s\n", header->host);
         } else if (strncasecmp("Origin: ", token, 8) == 0) {
             // origin
-            printlog("Origin..");
             header->origin = token+8;
-            printlog("-> Origin: %s\n", header->origin);
 
             header->origin_len = strlen(header->origin);
             if (strncasecmp("rainy.chat", header->origin + max(header->origin_len - 10, 0), 10) &&
@@ -111,29 +103,19 @@ int openHandshake(User *user) {
             }
         } else if (strncasecmp("Sec-WebSocket-Key: ", token, 19) == 0) {
             // key
-            printlog("Key..");
             header->key = token+19;
-            printlog("-> Sec-WebSocket-Key: %s\n", header->key);
         } else if (strncasecmp("Sec-WebSocket-Version: ", token, 23) == 0) {
             // version
-            printlog("Version..");
             header->version = strtol(token+23, (char**)NULL, 10);
-            printlog("-> Sec-WebSocket-Version: %d\n", header->version);
         } else if (strncasecmp("Sec-WebSocket-Extensions: ", token, 26) == 0) {
             // extensions
-            printlog("Extension..");
             header->extension = token+26;
-            printlog("-> Sec-WebSocket-Extensions: %s\n", header->extension);
         } else if (strncasecmp("Sec-WebSocket-Protocol: ", token, 24) == 0) {
             // protocol
-            printlog("Protocol..");
             header->protocol = token+24;
-            printlog("-> Sec-WebSocket-Protocol: %s\n", header->protocol);
         } else if (strncasecmp("User-Agent: ", token, 12) == 0) {
             // protocol
-            printlog("Agent..");
             header->agent = token+12;
-            printlog("-> User-Agent: %s\n", header->agent);
         }
         token = strtok_r(NULL, "\r\n", &last);
     }
