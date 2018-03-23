@@ -1,2 +1,3 @@
-# RainChat (Back-end)
-RainChat application
+# Rainy.Chat (WebSocket)
+
+Hackable chat application
